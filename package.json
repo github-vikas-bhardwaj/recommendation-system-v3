@@ -1,0 +1,43 @@
+{
+  "name": "recommendation-system-v3",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gen AI recommendation platform: Next.js (BFF) + FastAPI (LangServe)",
+  "workspaces": [
+    "apps/web"
+  ],
+  "engines": {
+    "node": "22.22.1"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "validate:branch": "sh .husky/validate-branch-name.sh",
+    "type-check": "npm run type-check -w web",
+    "test": "npm run test -w web",
+    "knip": "npm run knip -w web"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "21.0.2",
+    "@commitlint/config-conventional": "21.0.2",
+    "husky": "9.1.7",
+    "lint-staged": "17.0.7"
+  },
+  "lint-staged": {
+    "apps/web/**/*.{js,jsx,ts,tsx,mjs}": [
+      "eslint --fix --max-warnings=0 --config apps/web/eslint.config.mjs",
+      "prettier --write"
+    ],
+    "apps/web/**/*.{json,css,md}": [
+      "prettier --write"
+    ],
+    "package.json": [
+      "prettier --write"
+    ],
+    "commitlint.config.{js,ts,mjs,cjs}": [
+      "prettier --write"
+    ],
+    "docs/**/*.md": [
+      "prettier --write"
+    ]
+  }
+}

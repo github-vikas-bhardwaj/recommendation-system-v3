@@ -1,0 +1,2 @@
+echo "🔍 Checking commit msg format..."
+npx --no -- commitlint --edit "$1"

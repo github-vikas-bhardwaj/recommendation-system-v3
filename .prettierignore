@@ -1,0 +1,12 @@
+# dependencies & build output
+node_modules
+.venv
+.next
+out
+build
+dist
+coverage
+
+# lockfiles (avoid noisy diffs)
+package-lock.json
+uv.lock

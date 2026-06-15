@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "next": {
+    "config": "next.config.ts"
+  },
+  "vitest": {
+    "config": "vitest.config.ts",
+    "entry": ["lib/**/*.{test,spec}.ts"]
+  }
+}

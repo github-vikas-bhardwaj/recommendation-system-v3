@@ -1,0 +1,4 @@
+echo "🔍 Running pre-commit checks..."
+set -e
+npm run validate:branch
+npx lint-staged
