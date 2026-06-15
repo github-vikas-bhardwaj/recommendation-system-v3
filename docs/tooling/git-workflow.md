@@ -6,11 +6,11 @@
 
 Installed via `"prepare": "husky"`. Hooks in `.husky/`.
 
-| Hook         | Runs                       |
-| ------------ | -------------------------- |
-| `pre-commit` | Branch check → lint-staged |
-| `commit-msg` | commitlint                 |
-| `pre-push`   | type-check → test → knip   |
+| Hook         | Runs                                |
+| ------------ | ----------------------------------- |
+| `pre-commit` | Branch check → lint-staged          |
+| `commit-msg` | commitlint                          |
+| `pre-push`   | type-check → test → knip → lint:api |
 
 ## Branch naming
 

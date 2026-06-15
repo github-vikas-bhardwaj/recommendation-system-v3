@@ -2,17 +2,20 @@
 
 **Index:** [../TOOLING-WEB.md](../TOOLING-WEB.md)
 
+Hooks are **check-only** — they block the commit but do not auto-fix. Devs fix issues manually.
+
 ## lint-staged
 
 Runs on **staged files** at commit time (root `package.json`).
 
-| Glob                                | Actions                       |
-| ----------------------------------- | ----------------------------- |
-| `apps/web/**/*.{js,jsx,ts,tsx,mjs}` | ESLint `--fix`, then Prettier |
-| `apps/web/**/*.{json,css,md}`       | Prettier                      |
-| `package.json`                      | Prettier                      |
-| `commitlint.config.{js,ts,mjs,cjs}` | Prettier                      |
-| `docs/**/*.md`                      | Prettier                      |
+| Glob                                | Actions                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------- |
+| `apps/web/**/*.{js,jsx,ts,tsx,mjs}` | ESLint (check), Prettier `--check`                                           |
+| `apps/web/**/*.{json,css,md}`       | Prettier `--check`                                                           |
+| `apps/api/**/*.py`                  | Ruff check + `ruff format --check` — see [TOOLING-API.md](../TOOLING-API.md) |
+| `package.json`                      | Prettier `--check`                                                           |
+| `commitlint.config.{js,ts,mjs,cjs}` | Prettier `--check`                                                           |
+| `docs/**/*.md`                      | Prettier `--check`                                                           |
 
 ## ESLint
 
@@ -36,6 +39,17 @@ cd apps/web && npm run lint
 Single config at repo root: `.prettierrc` + `.prettierignore`
 
 ```bash
-cd apps/web && npm run format        # write
-cd apps/web && npm run format:check  # check only
+cd apps/web && npm run format:check  # check (used by hooks)
+cd apps/web && npm run format        # fix locally (optional)
+```
+
+## Manual fix workflow
+
+```bash
+# 1. See issues
+cd apps/web && npm run lint && npm run format:check
+
+# 2. Fix in your editor (or run format/lint --fix locally)
+
+# 3. Commit again
 ```

@@ -3,3 +3,4 @@ set -e
 npm run type-check
 npm run test
 npm run knip
+npm run lint:api

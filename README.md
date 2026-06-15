@@ -13,3 +13,4 @@ Gen AI recommendation platform: **Next.js** (UI + BFF) + **FastAPI** (LangServe 
 | [apps/web/README.md](apps/web/README.md)           | Next.js app                                   |
 | [apps/api/README.md](apps/api/README.md)           | FastAPI app                                   |
 | [docs/TOOLING-WEB.md](docs/TOOLING-WEB.md)         | Web dev tooling (lint, test, git hooks)       |
+| [docs/TOOLING-API.md](docs/TOOLING-API.md)         | API dev tooling (Ruff)                        |

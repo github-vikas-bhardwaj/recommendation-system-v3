@@ -8,7 +8,7 @@ Developer tooling for `apps/web` and the root monorepo.
 ## Hook flow
 
 ```
-commit  → branch check → lint-staged (ESLint + Prettier)
+commit  → branch check → lint-staged (check only — no auto-fix)
 commit  → commitlint
 push    → type-check → test → knip
 ```
@@ -23,4 +23,4 @@ push    → type-check → test → knip
 | Type-check, tests, Knip       | [tooling/checks.md](./tooling/checks.md)             |
 | Commands + config files       | [tooling/commands.md](./tooling/commands.md)         |
 
-API tooling (`TOOLING-API.md`) — coming soon.
+API tooling: [TOOLING-API.md](./TOOLING-API.md)

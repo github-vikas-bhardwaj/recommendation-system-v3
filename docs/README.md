@@ -11,14 +11,15 @@ Read in this order if you are new to the repo.
 | 3    | [GETTING-STARTED.md](./GETTING-STARTED.md)  | How to run it locally        |
 | 4    | [apps/web/README.md](../apps/web/README.md) | Web app (BFF + UI)           |
 | 5    | [apps/api/README.md](../apps/api/README.md) | API app (LangServe + Ollama) |
-| 6    | [TOOLING-WEB.md](./TOOLING-WEB.md)          | Day-to-day dev workflow      |
+| 6    | [TOOLING-WEB.md](./TOOLING-WEB.md)          | Web dev workflow             |
+| 7    | [TOOLING-API.md](./TOOLING-API.md)          | API dev workflow (Ruff)      |
 
 ## By topic
 
-| Topic          | Doc                                                             |
-| -------------- | --------------------------------------------------------------- |
-| System design  | [ARCHITECTURE.md](./ARCHITECTURE.md)                            |
-| Local setup    | [GETTING-STARTED.md](./GETTING-STARTED.md) → [setup/](./setup/) |
-| Project status | [STATUS.md](./STATUS.md)                                        |
-| Web tooling    | [TOOLING-WEB.md](./TOOLING-WEB.md) → [tooling/](./tooling/)     |
-| API tooling    | _Coming soon_                                                   |
+| Topic          | Doc                                                                 |
+| -------------- | ------------------------------------------------------------------- |
+| System design  | [ARCHITECTURE.md](./ARCHITECTURE.md)                                |
+| Local setup    | [GETTING-STARTED.md](./GETTING-STARTED.md) → [setup/](./setup/)     |
+| Project status | [STATUS.md](./STATUS.md)                                            |
+| Web tooling    | [TOOLING-WEB.md](./TOOLING-WEB.md) → [tooling/](./tooling/)         |
+| API tooling    | [TOOLING-API.md](./TOOLING-API.md) → [tooling-api/](./tooling-api/) |

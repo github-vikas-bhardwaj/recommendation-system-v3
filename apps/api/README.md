@@ -3,7 +3,7 @@
 FastAPI + LangServe — LangChain chains via **Ollama**, traced in **LangSmith**.
 
 **Previous:** [docs/GETTING-STARTED.md](../../docs/GETTING-STARTED.md)  
-**Next:** [docs/TOOLING-WEB.md](../../docs/TOOLING-WEB.md)  
+**Next:** [docs/TOOLING-API.md](../../docs/TOOLING-API.md)  
 **Index:** [docs/README.md](../../docs/README.md)
 
 ## Role
@@ -62,3 +62,5 @@ End-to-end via BFF: [docs/setup/local-setup.md](../../docs/setup/local-setup.md)
 | `pyproject.toml`      | Pinned deps                    |
 
 After changing deps: `uv lock && uv sync`
+
+Tooling (Ruff, hooks): [docs/TOOLING-API.md](../../docs/TOOLING-API.md)

@@ -14,7 +14,8 @@
     "validate:branch": "sh .husky/validate-branch-name.sh",
     "type-check": "npm run type-check -w web",
     "test": "npm run test -w web",
-    "knip": "npm run knip -w web"
+    "knip": "npm run knip -w web",
+    "lint:api": "uv run --directory apps/api ruff check . && uv run --directory apps/api ruff format --check ."
   },
   "devDependencies": {
     "@commitlint/cli": "21.0.2",
@@ -24,20 +25,21 @@
   },
   "lint-staged": {
     "apps/web/**/*.{js,jsx,ts,tsx,mjs}": [
-      "eslint --fix --max-warnings=0 --config apps/web/eslint.config.mjs",
-      "prettier --write"
+      "eslint --max-warnings=0 --config apps/web/eslint.config.mjs",
+      "prettier --check"
     ],
     "apps/web/**/*.{json,css,md}": [
-      "prettier --write"
+      "prettier --check"
     ],
+    "apps/api/**/*.py": "bash -c 'uv run --directory apps/api ruff check . && uv run --directory apps/api ruff format --check .'",
     "package.json": [
-      "prettier --write"
+      "prettier --check"
     ],
     "commitlint.config.{js,ts,mjs,cjs}": [
-      "prettier --write"
+      "prettier --check"
     ],
     "docs/**/*.md": [
-      "prettier --write"
+      "prettier --check"
     ]
   }
 }

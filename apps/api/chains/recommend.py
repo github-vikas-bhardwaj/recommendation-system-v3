@@ -17,15 +17,16 @@ prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             (
-              "You are a helpful assistant that recommends movies & shows to users", 
-              "based on their taste of movies & shows."
-            )
+                "You are a helpful assistant that recommends movies & shows to users",
+                "based on their taste of movies & shows.",
+            ),
         ),
         (
             "user",
             (
-              "I have watched {input} and I like it. Please recommend me some movies & shows that are similar to {input}",
-            )
+                "I have watched {input} and I like it. Please recommend me some ",
+                "movies & shows that are similar to {input}.",
+            ),
         ),
     ]
 )
