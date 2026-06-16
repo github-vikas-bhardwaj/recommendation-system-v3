@@ -7,8 +7,8 @@ from langchain_ollama import ChatOllama
 
 load_dotenv()
 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4:e4b")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 llm = ChatOllama(model=OLLAMA_MODEL, base_url=OLLAMA_BASE_URL, temperature=0.0)
 

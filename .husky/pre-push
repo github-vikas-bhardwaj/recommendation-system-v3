@@ -1,6 +1,7 @@
 echo "🔍 Running pre-push checks..."
 set -e
 npm run type-check
+npm run type-check:api
 npm run test
 npm run test:api
 npm run knip
