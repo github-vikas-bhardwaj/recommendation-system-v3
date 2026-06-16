@@ -15,7 +15,8 @@
     "type-check": "npm run type-check -w web",
     "test": "npm run test -w web",
     "knip": "npm run knip -w web",
-    "lint:api": "uv run --directory apps/api ruff check . && uv run --directory apps/api ruff format --check ."
+    "lint:api": "uv run --directory apps/api ruff check . && uv run --directory apps/api ruff format --check .",
+    "test:api": "uv run --directory apps/api pytest"
   },
   "devDependencies": {
     "@commitlint/cli": "21.0.2",
@@ -25,21 +26,21 @@
   },
   "lint-staged": {
     "apps/web/**/*.{js,jsx,ts,tsx,mjs}": [
-      "eslint --max-warnings=0 --config apps/web/eslint.config.mjs",
-      "prettier --check"
+      "eslint --fix --max-warnings=0 --config apps/web/eslint.config.mjs",
+      "prettier --write"
     ],
     "apps/web/**/*.{json,css,md}": [
-      "prettier --check"
+      "prettier --write"
     ],
-    "apps/api/**/*.py": "bash -c 'uv run --directory apps/api ruff check . && uv run --directory apps/api ruff format --check .'",
+    "apps/api/**/*.py": "bash -c 'uv run --directory apps/api ruff check --fix . && uv run --directory apps/api ruff format .'",
     "package.json": [
-      "prettier --check"
+      "prettier --write"
     ],
     "commitlint.config.{js,ts,mjs,cjs}": [
-      "prettier --check"
+      "prettier --write"
     ],
     "docs/**/*.md": [
-      "prettier --check"
+      "prettier --write"
     ]
   }
 }

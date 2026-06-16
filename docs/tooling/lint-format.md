@@ -2,54 +2,42 @@
 
 **Index:** [../TOOLING-WEB.md](../TOOLING-WEB.md)
 
-Hooks are **check-only** — they block the commit but do not auto-fix. Devs fix issues manually.
+On **pre-commit**, style issues are **auto-fixed** where the tool supports it. Devs review staged changes before committing.
 
 ## lint-staged
 
 Runs on **staged files** at commit time (root `package.json`).
 
-| Glob                                | Actions                                                                      |
-| ----------------------------------- | ---------------------------------------------------------------------------- |
-| `apps/web/**/*.{js,jsx,ts,tsx,mjs}` | ESLint (check), Prettier `--check`                                           |
-| `apps/web/**/*.{json,css,md}`       | Prettier `--check`                                                           |
-| `apps/api/**/*.py`                  | Ruff check + `ruff format --check` — see [TOOLING-API.md](../TOOLING-API.md) |
-| `package.json`                      | Prettier `--check`                                                           |
-| `commitlint.config.{js,ts,mjs,cjs}` | Prettier `--check`                                                           |
-| `docs/**/*.md`                      | Prettier `--check`                                                           |
+| Glob                                | Actions                                                                 |
+| ----------------------------------- | ----------------------------------------------------------------------- |
+| `apps/web/**/*.{js,jsx,ts,tsx,mjs}` | ESLint `--fix`, Prettier `--write`                                      |
+| `apps/web/**/*.{json,css,md}`       | Prettier `--write`                                                      |
+| `apps/api/**/*.py`                  | Ruff `check --fix` + `format` — see [TOOLING-API.md](../TOOLING-API.md) |
+| `package.json`                      | Prettier `--write`                                                      |
+| `commitlint.config.{js,ts,mjs,cjs}` | Prettier `--write`                                                      |
+| `docs/**/*.md`                      | Prettier `--write`                                                      |
+
+## Auto-fixed on commit
+
+| Issue              | Web                         | API                             |
+| ------------------ | --------------------------- | ------------------------------- |
+| Indentation        | Prettier                    | Ruff format                     |
+| Trailing newline   | Prettier                    | Ruff format                     |
+| Import order       | ESLint `--fix`              | Ruff `check --fix`              |
+| Unused imports     | ESLint `--fix`              | Ruff `check --fix`              |
+| Line length (E501) | Prettier (when it can wrap) | **Manual** — split long strings |
+
+**E501** in Python (long prompt strings) cannot be auto-fixed — split across lines by hand.
 
 ## ESLint
 
 Config: `apps/web/eslint.config.mjs`
 
-| Piece                       | Purpose                                  |
-| --------------------------- | ---------------------------------------- |
-| `eslint-config-next`        | Next.js + TypeScript rules               |
-| `eslint-plugin-react-hooks` | Hooks rules                              |
-| `eslint-config-prettier`    | No conflict with Prettier                |
-| `no-console`                | Blocks log/debug/info; allows warn/error |
-
-`settings.next.rootDir: "apps/web"` — fixes monorepo ESLint path issues.
-
 ```bash
 cd apps/web && npm run lint
+cd apps/web && npm run format
 ```
 
-## Prettier
+## Pre-push
 
-Single config at repo root: `.prettierrc` + `.prettierignore`
-
-```bash
-cd apps/web && npm run format:check  # check (used by hooks)
-cd apps/web && npm run format        # fix locally (optional)
-```
-
-## Manual fix workflow
-
-```bash
-# 1. See issues
-cd apps/web && npm run lint && npm run format:check
-
-# 2. Fix in your editor (or run format/lint --fix locally)
-
-# 3. Commit again
-```
+pre-commit **fixes** style; pre-push **checks** only (`lint:api`, `npm run lint`, etc.).

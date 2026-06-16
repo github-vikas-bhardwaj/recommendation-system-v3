@@ -32,26 +32,23 @@ File: `apps/api/pyproject.toml`
 | `UP` | Modern Python syntax                     |
 | `B`  | Common bug patterns                      |
 
-## Check-only policy
+## Auto-fix policy
 
-Hooks **do not** auto-fix. Devs fix issues manually in the editor.
+| When       | Command                              | Behavior                                                |
+| ---------- | ------------------------------------ | ------------------------------------------------------- |
+| pre-commit | `ruff check --fix` + `ruff format`   | Auto-fix imports, unused imports, indentation, newlines |
+| pre-push   | `ruff check` + `ruff format --check` | Check only                                              |
 
-| Command                 | Used by               | Auto-fixes? |
-| ----------------------- | --------------------- | ----------- |
-| `ruff check .`          | hooks                 | No          |
-| `ruff format --check .` | hooks                 | No          |
-| `ruff check --fix .`    | local only (optional) | Yes         |
-| `ruff format .`         | local only (optional) | Yes         |
+### Auto-fixed
 
-## Common errors
+- Indentation (`ruff format`)
+- Trailing newline (`ruff format`)
+- Import order (`ruff check --fix`)
+- Unused imports (`ruff check --fix`)
 
-| Code | Meaning          | Fix                       |
-| ---- | ---------------- | ------------------------- |
-| E501 | Line > 100 chars | Split string across lines |
-| F401 | Unused import    | Remove the import         |
-| I001 | Import order     | Reorder imports           |
+### Manual only
 
-Example — split a long prompt string:
+**E501** — line longer than 100 chars (common in prompt strings):
 
 ```python
 (

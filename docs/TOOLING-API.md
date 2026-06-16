@@ -8,7 +8,7 @@ Developer tooling for `apps/api`. Managed with **uv** — not part of npm worksp
 ## Hook flow
 
 ```
-commit  → lint-staged (ruff check + format --check, no auto-fix)
+commit  → lint-staged (ruff check --fix + format)
 push    → lint:api (after web checks)
 ```
 

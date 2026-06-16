@@ -8,7 +8,7 @@ Developer tooling for `apps/web` and the root monorepo.
 ## Hook flow
 
 ```
-commit  → branch check → lint-staged (check only — no auto-fix)
+commit  → branch check → lint-staged (auto-fix style where supported)
 commit  → commitlint
 push    → type-check → test → knip
 ```
