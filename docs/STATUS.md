@@ -8,15 +8,14 @@
 - FastAPI + LangServe + Ollama chain
 - LangSmith tracing
 - Next.js BFF + test page
-- Web dev tooling (ESLint, Prettier, Husky, Vitest, Knip)
-- API dev tooling (Ruff, lint-staged, pre-push)
+- Web dev tooling (ESLint, Prettier, Husky, Vitest, Knip, tsc)
+- API dev tooling (Ruff, pytest, pyright, lint-staged, pre-push)
 
 ## Planned
 
 - RAG / vector store (`apps/api`)
 - Auth (JWT/session on BFF)
 - Final product UI
-- pytest / pyright (`apps/api`)
 - CI/CD, Docker
 
 ## Local ports

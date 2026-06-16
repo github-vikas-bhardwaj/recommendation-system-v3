@@ -2,7 +2,7 @@
 
 **Index:** [../TOOLING-API.md](../TOOLING-API.md)
 
-API lint runs via root Husky hooks (same as web). Config in root `package.json`.
+API checks run via root Husky hooks (same as web). Config in root `package.json`.
 
 ## pre-commit
 
@@ -13,46 +13,34 @@ uv run --directory apps/api ruff check --fix .
 uv run --directory apps/api ruff format .
 ```
 
-Auto-fixes on commit:
-
-| Issue            | Tool               |
-| ---------------- | ------------------ |
-| Indentation      | `ruff format`      |
-| Trailing newline | `ruff format`      |
-| Import order     | `ruff check --fix` |
-| Unused imports   | `ruff check --fix` |
+Auto-fixes on commit: indentation, newlines, import order, unused imports.
 
 **E501** (line > 100 chars) is **not** auto-fixed — split strings manually.
 
-Checks the **whole** `apps/api` folder when any `.py` file is staged.
-
 ## pre-push
 
-After web checks, `.husky/pre-push` runs:
+API scripts (after web `type-check`):
 
 ```bash
-npm run lint:api
+npm run type-check:api   # pyright
+npm run test:api         # pytest
+npm run lint:api         # ruff check + format --check
 ```
 
-Check-only (no writes):
-
-```bash
-ruff check .
-ruff format --check .
-```
-
-Full pre-push order:
+Full pre-push order (web + API):
 
 ```
-type-check → test → test:api → knip → lint:api
+type-check → type-check:api → test → test:api → knip → lint:api
 ```
+
+All check-only on push — no auto-fix.
 
 ## Workflow
 
 ```bash
 git add apps/api/
-git commit -m "feat(api): ..."   # auto-fixes style, re-stage if needed
-git push                         # check-only gate
+git commit -m "feat(api): ..."   # Ruff auto-fixes style
+git push                         # pyright, pytest, ruff check
 ```
 
-If pre-commit reformats files, review the diff and commit again if new changes appear.
+If pre-commit reformats files, review the diff and commit again.

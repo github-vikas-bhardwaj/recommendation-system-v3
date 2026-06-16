@@ -9,25 +9,29 @@ Developer tooling for `apps/api`. Managed with **uv** — not part of npm worksp
 
 ```
 commit  → lint-staged (ruff check --fix + format)
-push    → lint:api (after web checks)
+push    → type-check:api → test:api → lint:api (with web checks)
 ```
 
-Web hooks (ESLint, Vitest, etc.): [TOOLING-WEB.md](./TOOLING-WEB.md)
+Web hooks: [TOOLING-WEB.md](./TOOLING-WEB.md)
 
 ## Topics
 
-| Topic                            | Doc                                                  |
-| -------------------------------- | ---------------------------------------------------- |
-| Ruff config + rules              | [tooling-api/ruff.md](./tooling-api/ruff.md)         |
-| Git hooks (pre-commit, pre-push) | [tooling-api/hooks.md](./tooling-api/hooks.md)       |
-| Commands + config files          | [tooling-api/commands.md](./tooling-api/commands.md) |
+| Topic                   | Doc                                                  |
+| ----------------------- | ---------------------------------------------------- |
+| Ruff (lint + format)    | [tooling-api/ruff.md](./tooling-api/ruff.md)         |
+| pytest (tests)          | [tooling-api/pytest.md](./tooling-api/pytest.md)     |
+| pyright (type-check)    | [tooling-api/pyright.md](./tooling-api/pyright.md)   |
+| Git hooks               | [tooling-api/hooks.md](./tooling-api/hooks.md)       |
+| Commands + config files | [tooling-api/commands.md](./tooling-api/commands.md) |
 
 ## Web vs API
 
-|                 | Web                      | API                      |
-| --------------- | ------------------------ | ------------------------ |
-| Package manager | npm (workspaces)         | uv                       |
-| Lint            | ESLint                   | `ruff check`             |
-| Format          | Prettier                 | `ruff format`            |
-| On commit       | lint-staged (check only) | lint-staged (check only) |
-| On push         | type-check, test, knip   | `lint:api`               |
+|                 | Web                    | API                                |
+| --------------- | ---------------------- | ---------------------------------- |
+| Package manager | npm (workspaces)       | uv                                 |
+| Lint            | ESLint                 | `ruff check`                       |
+| Format          | Prettier               | `ruff format`                      |
+| Type-check      | `tsc --noEmit`         | pyright                            |
+| Tests           | Vitest                 | pytest                             |
+| On commit       | lint-staged (auto-fix) | lint-staged (Ruff auto-fix)        |
+| On push         | type-check, test, knip | type-check:api, test:api, lint:api |
