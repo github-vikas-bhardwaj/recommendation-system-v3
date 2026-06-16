@@ -5,4 +5,6 @@ npm run type-check:api
 npm run test
 npm run test:api
 npm run knip
+npm run knip:api
+npm run lint:web
 npm run lint:api

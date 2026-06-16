@@ -1,0 +1,64 @@
+name: CI
+
+# Run CI on push to main or release/next, and on pull request to main or release/next
+on:
+  push:
+    branches: [main, release/next]
+  pull_request:
+    branches: [main, release/next]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    # skip git hooks on CI
+    env:
+      HUSKY: 0
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.2.0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: apps/api/.python-version
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: uv sync --directory apps/api
+
+      - name: Type-check (WEB)
+        run: npm run type-check
+
+      - name: Type-check (API)
+        run: npm run type-check:api
+
+      - name: Test (WEB)
+        run: npm run test
+
+      - name: Test (API)
+        run: npm run test:api
+
+      - name: Knip (WEB)
+        run: npm run knip
+
+      - name: Knip (API)
+        run: npm run knip:api
+
+      - name: Lint (WEB)
+        run: npm run lint:web
+
+      - name: Lint (API)
+        run: npm run lint:api

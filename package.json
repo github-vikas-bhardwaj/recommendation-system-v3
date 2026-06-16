@@ -15,6 +15,8 @@
     "type-check": "npm run type-check -w web",
     "test": "npm run test -w web",
     "knip": "npm run knip -w web",
+    "knip:api": "uv run --directory apps/api deptry .",
+    "lint:web": "npm run lint -w web -- --max-warnings=0",
     "lint:api": "uv run --directory apps/api ruff check . && uv run --directory apps/api ruff format --check .",
     "test:api": "uv run --directory apps/api pytest",
     "type-check:api": "uv run --directory apps/api pyright"
