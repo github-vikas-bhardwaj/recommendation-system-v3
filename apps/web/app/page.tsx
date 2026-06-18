@@ -19,9 +19,9 @@ export default function HomePage() {
           </p>
 
           <div className={styles.heroActions}>
-            <a href="#" className={styles.btnPrimary}>
+            <Link href="/signup" className={styles.btnPrimary}>
               Get started free
-            </a>
+            </Link>
             <a href="#how-it-works" className={styles.btnSecondary}>
               See how it works
             </a>

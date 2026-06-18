@@ -10,7 +10,7 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { label: "Sign up", href: "#", variant: "default" },
+  { label: "Sign up", href: "/signup", variant: "default" },
   { label: "Sign in", href: "#", variant: "primary" },
   { label: "Sign out", href: "#", variant: "ghost" },
 ];
