@@ -35,7 +35,7 @@ export default function AuthFlowPage() {
     <div className={styles.page}>
       <div className={styles.shell}>
         <Link href="/" className={styles.back}>
-          ← Back to test UI
+          ← Back to home
         </Link>
 
         <header className={styles.hero}>
