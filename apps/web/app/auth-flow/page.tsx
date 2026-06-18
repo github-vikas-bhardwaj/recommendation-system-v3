@@ -42,7 +42,7 @@ export default function AuthFlowPage() {
           <h1>How auth works</h1>
           <p>
             Step-by-step guide: signup → signin → session cookies → protected APIs → refresh →
-            logout. Run <span className={styles.tag}>npm run dev</span> first.
+            logout. Run <span className={styles.tag}>npm run dev:https -w web</span> first.
           </p>
         </header>
 
@@ -76,7 +76,7 @@ export default function AuthFlowPage() {
 
           <div className={styles.block} style={{ marginTop: "1.5rem" }}>
             <p className={styles.sectionLabel}>Architecture</p>
-            <Code>{`Browser  →  Next.js :3000  →  FastAPI :8000
+            <Code>{`Browser  →  Next.js https://localhost:3000  →  FastAPI :8000
 (cookies)     verifies JWT      gets X-User-Id`}</Code>
           </div>
         </section>
@@ -91,7 +91,7 @@ export default function AuthFlowPage() {
           </div>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Try it</p>
-            <Code>{`curl -X POST http://localhost:3000/api/auth/signup \\
+            <Code>{`curl -X POST https://localhost:3000/api/auth/signup \\
   -H "Content-Type: application/json" \\
   -d '{
     "firstName": "Vikas",
@@ -121,7 +121,7 @@ export default function AuthFlowPage() {
           </ul>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Try it · save cookies</p>
-            <Code>{`curl -c cookies.txt -X POST http://localhost:3000/api/auth/signin \\
+            <Code>{`curl -c cookies.txt -X POST https://localhost:3000/api/auth/signin \\
   -H "Content-Type: application/json" \\
   -d '{"email":"vikas@example.com","password":"Password123!"}'`}</Code>
           </div>
@@ -140,7 +140,7 @@ Headers: Set-Cookie: access_token=...
           </p>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Try it</p>
-            <Code>curl -b cookies.txt http://localhost:3000/api/auth/me</Code>
+            <Code>curl -b cookies.txt https://localhost:3000/api/auth/me</Code>
           </div>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Response</p>
@@ -156,13 +156,13 @@ Headers: Set-Cookie: access_token=...
           </p>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Without cookies</p>
-            <Code>{`curl -X POST http://localhost:3000/api/recommend \\
+            <Code>{`curl -X POST https://localhost:3000/api/recommend \\
   -H "Content-Type: application/json" \\
   -d '{"input":"sci-fi books"}'`}</Code>
           </div>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>With cookies</p>
-            <Code>{`curl -b cookies.txt -X POST http://localhost:3000/api/recommend \\
+            <Code>{`curl -b cookies.txt -X POST https://localhost:3000/api/recommend \\
   -H "Content-Type: application/json" \\
   -d '{"input":"sci-fi books"}'`}</Code>
           </div>
@@ -179,7 +179,7 @@ Headers: Set-Cookie: access_token=...
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Try it</p>
             <Code>{`curl -b cookies.txt -c cookies.txt \\
-  -X POST http://localhost:3000/api/auth/refresh`}</Code>
+  -X POST https://localhost:3000/api/auth/refresh`}</Code>
           </div>
           <div className={styles.callout}>Each refresh invalidates the previous refresh token.</div>
         </Step>
@@ -191,11 +191,11 @@ Headers: Set-Cookie: access_token=...
           </p>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Try it</p>
-            <Code>curl -b cookies.txt -X POST http://localhost:3000/api/auth/signout</Code>
+            <Code>curl -b cookies.txt -X POST https://localhost:3000/api/auth/signout</Code>
           </div>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Confirm logged out</p>
-            <Code>{`curl -b cookies.txt http://localhost:3000/api/auth/me
+            <Code>{`curl -b cookies.txt https://localhost:3000/api/auth/me
 # → 401`}</Code>
           </div>
         </Step>
@@ -208,22 +208,22 @@ Headers: Set-Cookie: access_token=...
             {[
               [
                 "1. Signup",
-                `curl -X POST http://localhost:3000/api/auth/signup -H "Content-Type: application/json" -d '{"firstName":"Vikas","email":"you@example.com","password":"Password123!","confirmPassword":"Password123!"}'`,
+                `curl -X POST https://localhost:3000/api/auth/signup -H "Content-Type: application/json" -d '{"firstName":"Vikas","email":"you@example.com","password":"Password123!","confirmPassword":"Password123!"}'`,
               ],
               [
                 "2. Signin",
-                `curl -c cookies.txt -X POST http://localhost:3000/api/auth/signin -H "Content-Type: application/json" -d '{"email":"you@example.com","password":"Password123!"}'`,
+                `curl -c cookies.txt -X POST https://localhost:3000/api/auth/signin -H "Content-Type: application/json" -d '{"email":"you@example.com","password":"Password123!"}'`,
               ],
-              ["3. Me", "curl -b cookies.txt http://localhost:3000/api/auth/me"],
+              ["3. Me", "curl -b cookies.txt https://localhost:3000/api/auth/me"],
               [
                 "4. Recommend",
-                `curl -b cookies.txt -X POST http://localhost:3000/api/recommend -H "Content-Type: application/json" -d '{"input":"sci-fi"}'`,
+                `curl -b cookies.txt -X POST https://localhost:3000/api/recommend -H "Content-Type: application/json" -d '{"input":"sci-fi"}'`,
               ],
               [
                 "5. Refresh",
-                "curl -b cookies.txt -c cookies.txt -X POST http://localhost:3000/api/auth/refresh",
+                "curl -b cookies.txt -c cookies.txt -X POST https://localhost:3000/api/auth/refresh",
               ],
-              ["6. Logout", "curl -b cookies.txt -X POST http://localhost:3000/api/auth/signout"],
+              ["6. Logout", "curl -b cookies.txt -X POST https://localhost:3000/api/auth/signout"],
             ].map(([label, cmd]) => (
               <div key={label} className={styles.cheatItem}>
                 <strong>{label}</strong>
