@@ -1,6 +1,7 @@
+import { NextRequest, NextResponse } from "next/server";
+
 import { requireAuth, UnauthorizedError } from "@/lib/auth/session/require-auth";
 import type { SessionUser } from "@/lib/auth/session/session.types";
-import { NextRequest, NextResponse } from "next/server";
 
 export type MeResponse = {
   user: SessionUser;

@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { refreshSession } = vi.hoisted(() => ({
   refreshSession: vi.fn(),
@@ -15,8 +15,9 @@ vi.mock("@/lib/auth/session/session.server", () => ({
   },
 }));
 
-import { POST } from "./route";
 import { SessionInvalidError } from "@/lib/auth/session/session.server";
+
+import { POST } from "./route";
 
 function refreshRequest(refreshToken?: string): NextRequest {
   if (refreshToken) {

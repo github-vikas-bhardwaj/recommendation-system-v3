@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import styles from "./auth-flow.module.css";
 
 function Code({ children }: { children: string }) {
@@ -83,32 +84,28 @@ export default function AuthFlowPage() {
 
         <Step number={1} title="Signup" summary="Create account. You are NOT logged in yet.">
           <p className={styles.bodyText}>
-            <span className={styles.tag}>POST /api/auth/signup</span> — validates input, hashes
+            <span className={styles.tag}>/signup</span> — server action validates input, hashes
             password, saves to <code>users</code> table.
           </p>
           <div className={styles.callout}>
-            Signup returns JSON only. <strong>No cookies.</strong> Sign in next.
+            Signup does not set cookies. <strong>Sign in next.</strong>
           </div>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Try it</p>
-            <Code>{`curl -X POST https://localhost:3000/api/auth/signup \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "firstName": "Vikas",
-    "email": "vikas@example.com",
-    "password": "Password123!",
-    "confirmPassword": "Password123!"
-  }'`}</Code>
+            <Code>{`Open https://localhost:3000/signup
+Fill the form and submit`}</Code>
           </div>
           <div className={styles.block}>
-            <p className={styles.sectionLabel}>Response · 201</p>
-            <Code>{`{ "user": { "id": "...", "firstName": "Vikas", "email": "..." } }`}</Code>
+            <p className={styles.sectionLabel}>On success</p>
+            <Code>{`Shows confirmation message.
+User is created in the database.
+No session cookies yet.`}</Code>
           </div>
         </Step>
 
         <Step number={2} title="Signin" summary="Verify password. Get session cookies.">
           <p className={styles.bodyText}>
-            <span className={styles.tag}>POST /api/auth/signin</span> — on success:
+            <span className={styles.tag}>/signin</span> — server action on success:
           </p>
           <ul className={styles.list}>
             <li>
@@ -120,16 +117,15 @@ export default function AuthFlowPage() {
             </li>
           </ul>
           <div className={styles.block}>
-            <p className={styles.sectionLabel}>Try it · save cookies</p>
-            <Code>{`curl -c cookies.txt -X POST https://localhost:3000/api/auth/signin \\
-  -H "Content-Type: application/json" \\
-  -d '{"email":"vikas@example.com","password":"Password123!"}'`}</Code>
+            <p className={styles.sectionLabel}>Try it</p>
+            <Code>{`Open https://localhost:3000/signin
+Enter email + password and submit`}</Code>
           </div>
           <div className={styles.block}>
-            <p className={styles.sectionLabel}>Response · 200</p>
-            <Code>{`Body:    { "user": { ... } }
-Headers: Set-Cookie: access_token=...
-         Set-Cookie: refresh_token=...`}</Code>
+            <p className={styles.sectionLabel}>On success</p>
+            <Code>{`Browser stores httpOnly cookies:
+  access_token  (JWT, ~15 min)
+  refresh_token (opaque, ~7 days)`}</Code>
           </div>
         </Step>
 
@@ -186,34 +182,33 @@ Headers: Set-Cookie: access_token=...
 
         <Step number={6} title="Logout" summary="End the session.">
           <p className={styles.bodyText}>
-            <span className={styles.tag}>POST /api/auth/signout</span> — revoke refresh token, clear
-            cookies.
+            <span className={styles.tag}>Sign out</span> in the header — server action revokes the
+            refresh token and clears cookies.
           </p>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Try it</p>
-            <Code>curl -b cookies.txt -X POST https://localhost:3000/api/auth/signout</Code>
+            <Code>{`Click "Sign out" in the header
+→ redirects to home
+→ signup / sign in links return`}</Code>
           </div>
           <div className={styles.block}>
             <p className={styles.sectionLabel}>Confirm logged out</p>
-            <Code>{`curl -b cookies.txt https://localhost:3000/api/auth/me
-# → 401`}</Code>
+            <Code>{`Visit https://localhost:3000/recommend
+→ redirects to /signup`}</Code>
           </div>
         </Step>
 
         <section className={styles.card}>
-          <h2>Curl cheatsheet</h2>
-          <p className={styles.cardSummary}>Run in order. Replace email/password.</p>
+          <h2>Quick reference</h2>
+          <p className={styles.cardSummary}>
+            Signup and signin use forms (server actions). Session APIs use curl after signing in via
+            the browser.
+          </p>
 
           <div style={{ marginTop: "1.5rem" }}>
             {[
-              [
-                "1. Signup",
-                `curl -X POST https://localhost:3000/api/auth/signup -H "Content-Type: application/json" -d '{"firstName":"Vikas","email":"you@example.com","password":"Password123!","confirmPassword":"Password123!"}'`,
-              ],
-              [
-                "2. Signin",
-                `curl -c cookies.txt -X POST https://localhost:3000/api/auth/signin -H "Content-Type: application/json" -d '{"email":"you@example.com","password":"Password123!"}'`,
-              ],
+              ["1. Signup (UI)", "https://localhost:3000/signup"],
+              ["2. Signin (UI)", "https://localhost:3000/signin"],
               ["3. Me", "curl -b cookies.txt https://localhost:3000/api/auth/me"],
               [
                 "4. Recommend",
@@ -223,7 +218,7 @@ Headers: Set-Cookie: access_token=...
                 "5. Refresh",
                 "curl -b cookies.txt -c cookies.txt -X POST https://localhost:3000/api/auth/refresh",
               ],
-              ["6. Logout", "curl -b cookies.txt -X POST https://localhost:3000/api/auth/signout"],
+              ["6. Logout", 'Click "Sign out" in the header'],
             ].map(([label, cmd]) => (
               <div key={label} className={styles.cheatItem}>
                 <strong>{label}</strong>

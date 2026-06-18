@@ -32,10 +32,10 @@ npm run dev:https -w web
 
 Opens **https://localhost:3000**. Next.js generates a trusted local certificate (via mkcert). On first run macOS may prompt for your password to install the CA.
 
-Use **https** in curl when testing auth cookies with the `Secure` flag:
+Use **https** when testing session API routes with curl (cookies may use the `Secure` flag):
 
 ```bash
-curl -k -c cookies.txt -X POST https://localhost:3000/api/auth/signin ...
+curl -k -b cookies.txt https://localhost:3000/api/auth/me
 ```
 
 (`-k` skips cert verification if needed; trusted certs usually work without it.)

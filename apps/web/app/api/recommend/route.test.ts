@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const USER_ID = "851b2dd4-17ad-4d83-8df4-59c4abb3feb8";
 
@@ -24,8 +24,9 @@ vi.mock("@/lib/auth/session/require-auth", () => ({
   },
 }));
 
-import { POST } from "./route";
 import { UnauthorizedError } from "@/lib/auth/session/require-auth";
+
+import { POST } from "./route";
 
 function recommendRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/recommend", {

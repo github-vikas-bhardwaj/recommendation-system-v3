@@ -1,10 +1,11 @@
+import { NextRequest, NextResponse } from "next/server";
+
 import {
   clearSessionCookies,
   REFRESH_TOKEN_COOKIE,
   setSessionCookies,
 } from "@/lib/auth/session/cookies";
 import { refreshSession, SessionInvalidError } from "@/lib/auth/session/session.server";
-import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {

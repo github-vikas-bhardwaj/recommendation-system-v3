@@ -1,4 +1,8 @@
 import Link from "next/link";
+
+import { signoutAction } from "@/app/actions/signout/signout.action";
+import { getSessionUser } from "@/lib/auth/session/get-session";
+
 import styles from "./header.module.css";
 
 type NavVariant = "default" | "primary" | "ghost";
@@ -9,10 +13,9 @@ type NavItem = {
   variant: NavVariant;
 };
 
-const navItems: NavItem[] = [
+const guestNavItems: NavItem[] = [
   { label: "Sign up", href: "/signup", variant: "default" },
-  { label: "Sign in", href: "#", variant: "primary" },
-  { label: "Sign out", href: "#", variant: "ghost" },
+  { label: "Sign in", href: "/signin", variant: "primary" },
 ];
 
 const variantClass: Record<NavVariant, string> = {
@@ -21,21 +24,31 @@ const variantClass: Record<NavVariant, string> = {
   ghost: styles.navLinkGhost,
 };
 
-export function Header() {
+export async function Header() {
+  const user = await getSessionUser();
+
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link href="/" className={styles.brand}>
+        <Link href={user ? "/recommend" : "/"} className={styles.brand}>
           <span className={styles.brandIcon}>R</span>
           Recommend
         </Link>
 
         <nav className={styles.nav} aria-label="Account">
-          {navItems.map((item) => (
-            <a key={item.label} href={item.href} className={variantClass[item.variant]}>
-              {item.label}
-            </a>
-          ))}
+          {user ? (
+            <form action={signoutAction}>
+              <button type="submit" className={styles.navButtonGhost}>
+                Sign out
+              </button>
+            </form>
+          ) : (
+            guestNavItems.map((item) => (
+              <a key={item.label} href={item.href} className={variantClass[item.variant]}>
+                {item.label}
+              </a>
+            ))
+          )}
         </nav>
       </div>
     </header>

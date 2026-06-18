@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { SignupInput } from "./signup.schema";
 
 vi.mock("server-only", () => ({}));
@@ -32,8 +33,8 @@ vi.mock("bcrypt", () => ({
   default: { hash },
 }));
 
-import { createUser, SignupConflictError } from "./signup.server";
 import { UNIQUE_VIOLATION_CODE } from "../db-errors";
+import { createUser, SignupConflictError } from "./signup.server";
 
 const signupInput: SignupInput = {
   firstName: "Vikas",

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { SignJWT, jwtVerify } from "jose";
+import { jwtVerify, SignJWT } from "jose";
 
 const ACCESS_TOKEN_TYPE = "access";
 

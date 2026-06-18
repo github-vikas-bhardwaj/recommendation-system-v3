@@ -98,10 +98,31 @@
   background: #f1f5f9;
 }
 
+.navButtonGhost {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.navButtonGhost:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+
 @media (max-width: 640px) {
   .navLink,
   .navLinkPrimary,
-  .navLinkGhost {
+  .navLinkGhost,
+  .navButtonGhost {
     padding: 0.5rem 0.65rem;
     font-size: 0.85rem;
   }

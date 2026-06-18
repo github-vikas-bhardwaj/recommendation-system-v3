@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockUser = {
   id: "851b2dd4-17ad-4d83-8df4-59c4abb3feb8",
@@ -22,8 +22,9 @@ vi.mock("@/lib/auth/session/require-auth", () => ({
   },
 }));
 
-import { GET } from "./route";
 import { UnauthorizedError } from "@/lib/auth/session/require-auth";
+
+import { GET } from "./route";
 
 function meRequest(): NextRequest {
   return new NextRequest("http://localhost/api/auth/me");

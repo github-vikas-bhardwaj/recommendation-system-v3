@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { isUniqueViolation, UNIQUE_VIOLATION_CODE } from "./db-errors";
 
 describe("isUniqueViolation", () => {

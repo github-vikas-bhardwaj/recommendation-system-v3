@@ -1,5 +1,6 @@
-import { requireAuth, UnauthorizedError } from "@/lib/auth/session/require-auth";
 import { NextRequest, NextResponse } from "next/server";
+
+import { requireAuth, UnauthorizedError } from "@/lib/auth/session/require-auth";
 
 export async function POST(req: NextRequest) {
   try {

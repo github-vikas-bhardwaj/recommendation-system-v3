@@ -1,9 +1,11 @@
 import "server-only";
 
 import bcrypt from "bcrypt";
+
+import { isUniqueViolation } from "@/lib/auth/db-errors";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { isUniqueViolation } from "@/lib/auth/db-errors";
+
 import type { SignupInput } from "./signup.schema";
 import type { SignupResponse } from "./signup.types";
 

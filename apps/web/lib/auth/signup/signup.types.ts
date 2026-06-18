@@ -1,4 +1,4 @@
-/** Success response for POST /api/auth/signup — never include password */
+/** Success response from signup — never include password */
 export type SignupResponse = {
   user: {
     id: string;

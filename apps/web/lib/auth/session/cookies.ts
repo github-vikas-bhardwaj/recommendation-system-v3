@@ -1,5 +1,7 @@
 import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+
 import type { SessionTokens } from "./session.types";
 
 export const ACCESS_TOKEN_COOKIE = "access_token";
@@ -24,6 +26,20 @@ function cookieOptions(maxAge: number): Partial<ResponseCookie> {
 export function setSessionCookies(response: NextResponse, tokens: SessionTokens): void {
   response.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, cookieOptions(FIFTEEN_MINUTES));
   response.cookies.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, cookieOptions(SEVEN_DAYS));
+}
+
+export async function setSessionCookiesInStore(tokens: SessionTokens): Promise<void> {
+  const cookieStore = await cookies();
+
+  cookieStore.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, cookieOptions(FIFTEEN_MINUTES));
+  cookieStore.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, cookieOptions(SEVEN_DAYS));
+}
+
+export async function clearSessionCookiesInStore(): Promise<void> {
+  const cookieStore = await cookies();
+
+  cookieStore.set(ACCESS_TOKEN_COOKIE, "", { ...cookieOptions(0), maxAge: 0 });
+  cookieStore.set(REFRESH_TOKEN_COOKIE, "", { ...cookieOptions(0), maxAge: 0 });
 }
 
 export function clearSessionCookies(response: NextResponse): void {

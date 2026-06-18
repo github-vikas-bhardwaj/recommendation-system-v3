@@ -1,4 +1,5 @@
 import "dotenv/config";
+
 import postgres from "postgres";
 
 const adminUrl = process.env.DATABASE_ADMIN_URL;

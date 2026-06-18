@@ -2,8 +2,10 @@ import "server-only";
 
 import { eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
+
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+
 import { ACCESS_TOKEN_COOKIE } from "./cookies";
 import { verifyAccessToken } from "./jwt";
 import type { SessionUser } from "./session.types";
