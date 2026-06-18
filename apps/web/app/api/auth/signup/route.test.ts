@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+// mock server only
+vi.mock("server-only", () => ({}));
+
 const { createUser } = vi.hoisted(() => ({
   createUser: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/signup.server", () => ({
+vi.mock("@/lib/auth/signup/signup.server", () => ({
   createUser,
   SignupConflictError: class SignupConflictError extends Error {
     constructor(message: string) {
@@ -16,7 +19,7 @@ vi.mock("@/lib/auth/signup.server", () => ({
 }));
 
 import { POST } from "./route";
-import { SignupConflictError } from "@/lib/auth/signup.server";
+import { SignupConflictError } from "@/lib/auth/signup/signup.server";
 
 function signupRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/auth/signup", {

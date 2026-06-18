@@ -1,11 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { authenticateUser } = vi.hoisted(() => ({
+const USER_ID = "851b2dd4-17ad-4d83-8df4-59c4abb3feb8";
+
+const { authenticateUser, createSession } = vi.hoisted(() => ({
   authenticateUser: vi.fn(),
+  createSession: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/signin.server", () => ({
+vi.mock("@/lib/auth/signin/signin.server", () => ({
   authenticateUser,
   SigninInvalidCredentialsError: class SigninInvalidCredentialsError extends Error {
     constructor(message = "Invalid email or password") {
@@ -15,8 +18,12 @@ vi.mock("@/lib/auth/signin.server", () => ({
   },
 }));
 
+vi.mock("@/lib/auth/session/session.server", () => ({
+  createSession,
+}));
+
 import { POST } from "./route";
-import { SigninInvalidCredentialsError } from "@/lib/auth/signin.server";
+import { SigninInvalidCredentialsError } from "@/lib/auth/signin/signin.server";
 
 function signinRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/auth/signin", {
@@ -31,32 +38,37 @@ const validBody = {
   password: "Password123!",
 };
 
+const mockUser = {
+  id: USER_ID,
+  firstName: "Vikas",
+  lastName: "Bhardwaj",
+  email: "vikas@example.com",
+};
+
 describe("POST /api/auth/signin", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    authenticateUser.mockResolvedValue({ user: mockUser });
+    createSession.mockResolvedValue({
+      accessToken: "signed-access-token",
+      refreshToken: "plain-refresh-token",
+    });
   });
 
-  it("returns 200 with user on successful signin", async () => {
-    authenticateUser.mockResolvedValue({
-      user: {
-        id: "851b2dd4-17ad-4d83-8df4-59c4abb3feb8",
-        firstName: "Vikas",
-        lastName: "Bhardwaj",
-        email: "vikas@example.com",
-      },
-    });
-
+  it("returns 200 with user and sets session cookies on successful signin", async () => {
     const response = await POST(signinRequest(validBody));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      user: {
-        id: "851b2dd4-17ad-4d83-8df4-59c4abb3feb8",
-        firstName: "Vikas",
-        lastName: "Bhardwaj",
-        email: "vikas@example.com",
-      },
-    });
+    await expect(response.json()).resolves.toEqual({ user: mockUser });
+    expect(createSession).toHaveBeenCalledWith(USER_ID);
+
+    const accessCookie = response.cookies.get("access_token");
+    const refreshCookie = response.cookies.get("refresh_token");
+
+    expect(accessCookie?.value).toBe("signed-access-token");
+    expect(refreshCookie?.value).toBe("plain-refresh-token");
+    expect(accessCookie?.httpOnly).toBe(true);
+    expect(refreshCookie?.httpOnly).toBe(true);
   });
 
   it("returns 400 when validation fails", async () => {
@@ -69,6 +81,7 @@ describe("POST /api/auth/signin", () => {
 
     expect(response.status).toBe(400);
     expect(authenticateUser).not.toHaveBeenCalled();
+    expect(createSession).not.toHaveBeenCalled();
     const body = await response.json();
     expect(body.error).toBe("Validation failed");
     expect(body.details.email).toBeDefined();
@@ -80,6 +93,7 @@ describe("POST /api/auth/signin", () => {
     const response = await POST(signinRequest(validBody));
 
     expect(response.status).toBe(401);
+    expect(createSession).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
       error: "Invalid email or password",
     });
@@ -92,6 +106,7 @@ describe("POST /api/auth/signin", () => {
     const response = await POST(signinRequest(validBody));
 
     expect(response.status).toBe(500);
+    expect(createSession).not.toHaveBeenCalled();
     await expect(response.json()).resolves.toEqual({
       error: "Something went wrong",
     });

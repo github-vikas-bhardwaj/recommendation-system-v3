@@ -33,7 +33,7 @@ vi.mock("bcrypt", () => ({
 }));
 
 import { createUser, SignupConflictError } from "./signup.server";
-import { UNIQUE_VIOLATION_CODE } from "./db-errors";
+import { UNIQUE_VIOLATION_CODE } from "../db-errors";
 
 const signupInput: SignupInput = {
   firstName: "Vikas",

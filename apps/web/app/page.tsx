@@ -39,7 +39,12 @@ export default function Home() {
   return (
     <main style={{ maxWidth: 640, margin: "2rem auto", padding: "0 1rem" }}>
       <h1>Recommendation System (test UI)</h1>
-      <p>Dummy page for end-to-end testing. Will be replaced with final design.</p>
+      <p>
+        Dummy page for end-to-end testing. Will be replaced with final design.{" "}
+        <a href="/auth-flow" style={{ color: "#2563eb" }}>
+          Read the auth flow guide →
+        </a>
+      </p>
 
       <form
         onSubmit={handleSubmit}

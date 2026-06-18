@@ -8,6 +8,13 @@
       "when": 1781692775490,
       "tag": "0000_create_users",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781697043586,
+      "tag": "0001_clever_robin_chapel",
+      "breakpoints": true
     }
   ]
 }

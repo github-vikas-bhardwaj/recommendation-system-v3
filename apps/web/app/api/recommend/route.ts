@@ -1,7 +1,10 @@
-import { NextResponse } from "next/server";
+import { requireAuth, UnauthorizedError } from "@/lib/auth/session/require-auth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const user = await requireAuth(req);
+
     const body = await req.json();
     const userInput = body?.input;
 
@@ -21,6 +24,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-User-Id": user.id,
       },
       body: JSON.stringify({ input: { input: userInput.trim() } }),
       signal: AbortSignal.timeout(180_000),
@@ -50,6 +54,10 @@ export async function POST(req: Request) {
 
     return NextResponse.json(data);
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+
     console.error("[/api/recommend]", error);
 
     if (error instanceof SyntaxError) {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { flattenError } from "zod";
-import { signupSchema } from "@/lib/auth/signup.schema";
-import type { SignupResponse } from "@/lib/auth/signup.types";
-import { createUser, SignupConflictError } from "@/lib/auth/signup.server";
+import { signupSchema } from "@/lib/auth/signup/signup.schema";
+import type { SignupResponse } from "@/lib/auth/signup/signup.types";
+import { createUser, SignupConflictError } from "@/lib/auth/signup/signup.server";
 
 export async function POST(req: NextRequest) {
   try {

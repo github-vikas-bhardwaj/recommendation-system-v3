@@ -1,6 +1,8 @@
-import { signinSchema } from "@/lib/auth/signin.schema";
-import { authenticateUser, SigninInvalidCredentialsError } from "@/lib/auth/signin.server";
-import { SigninResponse } from "@/lib/auth/signin.types";
+import { signinSchema } from "@/lib/auth/signin/signin.schema";
+import { authenticateUser, SigninInvalidCredentialsError } from "@/lib/auth/signin/signin.server";
+import type { SigninResponse } from "@/lib/auth/signin/signin.types";
+import { setSessionCookies } from "@/lib/auth/session/cookies";
+import { createSession } from "@/lib/auth/session/session.server";
 import { NextRequest, NextResponse } from "next/server";
 import { flattenError } from "zod";
 
@@ -15,14 +17,16 @@ export async function POST(req: NextRequest) {
           error: "Validation failed",
           details: flattenError(result.error).fieldErrors,
         },
-        {
-          status: 400,
-        }
+        { status: 400 }
       );
     }
 
-    const response: SigninResponse = await authenticateUser(result.data);
-    return NextResponse.json(response, { status: 200 });
+    const { user } = await authenticateUser(result.data);
+    const tokens = await createSession(user.id);
+
+    const response = NextResponse.json({ user } satisfies SigninResponse, { status: 200 });
+    setSessionCookies(response, tokens);
+    return response;
   } catch (error) {
     if (error instanceof SyntaxError) {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
