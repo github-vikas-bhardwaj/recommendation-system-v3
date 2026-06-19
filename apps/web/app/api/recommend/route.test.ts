@@ -40,7 +40,7 @@ describe("POST /api/recommend", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv("AI_API_URL", "http://localhost:8000");
-    requireAuth.mockResolvedValue(mockUser);
+    requireAuth.mockResolvedValue({ user: mockUser });
   });
 
   afterEach(() => {
@@ -48,13 +48,15 @@ describe("POST /api/recommend", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns 401 when not authenticated", async () => {
+  it("returns 401 and clears cookies when not authenticated", async () => {
     requireAuth.mockRejectedValue(new UnauthorizedError());
 
     const response = await POST(recommendRequest({ input: "hello" }));
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+    expect(response.cookies.get("access_token")?.value).toBe("");
+    expect(response.cookies.get("refresh_token")?.value).toBe("");
   });
 
   it("returns 400 when input is invalid", async () => {

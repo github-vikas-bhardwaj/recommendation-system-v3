@@ -33,7 +33,7 @@ export async function signinAction(
   try {
     const { user } = await authenticateUser(result.data);
     const tokens = await createSession(user.id);
-    await setSessionCookiesInStore(tokens);
+    await setSessionCookiesInStore(tokens, tokens.refreshExpiresAt);
   } catch (error) {
     if (error instanceof SigninInvalidCredentialsError) {
       return { error: error.message };

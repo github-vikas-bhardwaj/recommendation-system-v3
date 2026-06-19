@@ -1,14 +1,10 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-
-import { ACCESS_TOKEN_COOKIE } from "./cookies";
-import { verifyAccessToken } from "./jwt";
-import type { SessionUser } from "./session.types";
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./cookies";
+import { resolveSession } from "./resolve-session";
+import type { SessionTokens, SessionUser } from "./session.types";
 
 export class UnauthorizedError extends Error {
   constructor(message = "Unauthorized") {
@@ -17,34 +13,25 @@ export class UnauthorizedError extends Error {
   }
 }
 
-export async function requireAuth(req: NextRequest): Promise<SessionUser> {
+export type RequireAuthResult = {
+  user: SessionUser;
+  tokens?: SessionTokens;
+  refreshExpiresAt?: Date;
+};
+
+export async function requireAuth(req: NextRequest): Promise<RequireAuthResult> {
   const accessToken = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+  const refreshToken = req.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
-  if (!accessToken) {
+  const result = await resolveSession(accessToken, refreshToken);
+
+  if (result.status === "unauthenticated") {
     throw new UnauthorizedError();
   }
 
-  let userId: string;
-  try {
-    ({ sub: userId } = await verifyAccessToken(accessToken));
-  } catch {
-    throw new UnauthorizedError();
-  }
-
-  const [user] = await db
-    .select({
-      id: users.id,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      email: users.email,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  if (!user) {
-    throw new UnauthorizedError();
-  }
-
-  return user;
+  return {
+    user: result.user,
+    tokens: result.refreshed ? result.tokens : undefined,
+    refreshExpiresAt: result.refreshed ? result.refreshExpiresAt : undefined,
+  };
 }

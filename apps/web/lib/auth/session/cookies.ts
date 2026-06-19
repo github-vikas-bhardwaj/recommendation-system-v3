@@ -2,16 +2,14 @@ import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./cookie-names";
 import type { SessionTokens } from "./session.types";
+import { getAccessTokenMaxAgeSeconds, getRefreshTokenMaxAgeSeconds } from "./token-expiry";
 
-export const ACCESS_TOKEN_COOKIE = "access_token";
-export const REFRESH_TOKEN_COOKIE = "refresh_token";
+export { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from "./cookie-names";
 
 const isProduction = process.env.NODE_ENV === "production";
 const useSecureCookies = isProduction || process.env.COOKIE_SECURE === "true";
-
-const FIFTEEN_MINUTES = 15 * 60;
-const SEVEN_DAYS = 7 * 24 * 60 * 60;
 
 function cookieOptions(maxAge: number): Partial<ResponseCookie> {
   return {
@@ -23,16 +21,47 @@ function cookieOptions(maxAge: number): Partial<ResponseCookie> {
   };
 }
 
-export function setSessionCookies(response: NextResponse, tokens: SessionTokens): void {
-  response.cookies.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, cookieOptions(FIFTEEN_MINUTES));
-  response.cookies.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, cookieOptions(SEVEN_DAYS));
+function refreshCookieMaxAge(refreshExpiresAt?: Date): number {
+  if (!refreshExpiresAt) {
+    return getRefreshTokenMaxAgeSeconds();
+  }
+
+  return Math.max(0, Math.floor((refreshExpiresAt.getTime() - Date.now()) / 1000));
 }
 
-export async function setSessionCookiesInStore(tokens: SessionTokens): Promise<void> {
+export function setSessionCookies(
+  response: NextResponse,
+  tokens: SessionTokens,
+  refreshExpiresAt?: Date
+): void {
+  response.cookies.set(
+    ACCESS_TOKEN_COOKIE,
+    tokens.accessToken,
+    cookieOptions(getAccessTokenMaxAgeSeconds())
+  );
+  response.cookies.set(
+    REFRESH_TOKEN_COOKIE,
+    tokens.refreshToken,
+    cookieOptions(refreshCookieMaxAge(refreshExpiresAt))
+  );
+}
+
+export async function setSessionCookiesInStore(
+  tokens: SessionTokens,
+  refreshExpiresAt?: Date
+): Promise<void> {
   const cookieStore = await cookies();
 
-  cookieStore.set(ACCESS_TOKEN_COOKIE, tokens.accessToken, cookieOptions(FIFTEEN_MINUTES));
-  cookieStore.set(REFRESH_TOKEN_COOKIE, tokens.refreshToken, cookieOptions(SEVEN_DAYS));
+  cookieStore.set(
+    ACCESS_TOKEN_COOKIE,
+    tokens.accessToken,
+    cookieOptions(getAccessTokenMaxAgeSeconds())
+  );
+  cookieStore.set(
+    REFRESH_TOKEN_COOKIE,
+    tokens.refreshToken,
+    cookieOptions(refreshCookieMaxAge(refreshExpiresAt))
+  );
 }
 
 export async function clearSessionCookiesInStore(): Promise<void> {

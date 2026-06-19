@@ -67,9 +67,11 @@ describe("signinAction", () => {
         email: "vikas@example.com",
       },
     });
+    const refreshExpiresAt = new Date("2030-01-01T00:00:00.000Z");
     createSession.mockResolvedValue({
       accessToken: "access-token",
       refreshToken: "refresh-token",
+      refreshExpiresAt,
     });
 
     await expect(signinAction(initialSigninActionState, signinFormData())).rejects.toThrow(
@@ -78,10 +80,14 @@ describe("signinAction", () => {
 
     expect(authenticateUser).toHaveBeenCalledOnce();
     expect(createSession).toHaveBeenCalledWith("851b2dd4-17ad-4d83-8df4-59c4abb3feb8");
-    expect(setSessionCookiesInStore).toHaveBeenCalledWith({
-      accessToken: "access-token",
-      refreshToken: "refresh-token",
-    });
+    expect(setSessionCookiesInStore).toHaveBeenCalledWith(
+      {
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        refreshExpiresAt,
+      },
+      refreshExpiresAt
+    );
     expect(redirect).toHaveBeenCalledWith("/recommend");
   });
 

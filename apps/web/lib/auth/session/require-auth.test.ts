@@ -11,63 +11,65 @@ const storedUser = {
   email: "vikas@example.com",
 };
 
-const { limit, where, from, select, verifyAccessToken } = vi.hoisted(() => ({
-  limit: vi.fn(),
-  where: vi.fn(),
-  from: vi.fn(),
-  select: vi.fn(),
-  verifyAccessToken: vi.fn(),
+const { resolveSession } = vi.hoisted(() => ({
+  resolveSession: vi.fn(),
 }));
 
-limit.mockResolvedValue([storedUser]);
-where.mockImplementation(() => ({ limit }));
-from.mockImplementation(() => ({ where }));
-select.mockImplementation(() => ({ from }));
-
-vi.mock("@/lib/db", () => ({ db: { select } }));
-vi.mock("@/lib/db/schema", () => ({
-  users: { id: "id", firstName: "first_name", lastName: "last_name", email: "email" },
-}));
-vi.mock("./jwt", () => ({ verifyAccessToken }));
+vi.mock("./resolve-session", () => ({ resolveSession }));
 
 import { requireAuth, UnauthorizedError } from "./require-auth";
 
-function requestWithCookie(token?: string): NextRequest {
-  if (token) {
-    return new NextRequest("http://localhost/api/recommend", {
-      headers: { Cookie: `access_token=${token}` },
-    });
-  }
-  return new NextRequest("http://localhost/api/recommend");
+function requestWithCookies(accessToken?: string, refreshToken?: string): NextRequest {
+  const cookieParts = [
+    accessToken ? `access_token=${accessToken}` : null,
+    refreshToken ? `refresh_token=${refreshToken}` : null,
+  ].filter(Boolean);
+
+  return new NextRequest("http://localhost/api/recommend", {
+    headers: cookieParts.length > 0 ? { Cookie: cookieParts.join("; ") } : undefined,
+  });
 }
 
 describe("requireAuth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    limit.mockResolvedValue([storedUser]);
-    verifyAccessToken.mockResolvedValue({ sub: USER_ID });
+    resolveSession.mockResolvedValue({
+      status: "authenticated",
+      user: storedUser,
+      refreshed: false,
+    });
   });
 
   it("returns user when access token is valid", async () => {
-    const user = await requireAuth(requestWithCookie("valid-token"));
-    expect(user).toEqual(storedUser);
+    const result = await requireAuth(requestWithCookies("valid-token"));
+
+    expect(result.user).toEqual(storedUser);
+    expect(result.tokens).toBeUndefined();
+    expect(resolveSession).toHaveBeenCalledWith("valid-token", undefined);
   });
 
-  it("throws when cookie is missing", async () => {
-    await expect(requireAuth(requestWithCookie())).rejects.toBeInstanceOf(UnauthorizedError);
+  it("returns refreshed tokens when session was renewed", async () => {
+    resolveSession.mockResolvedValue({
+      status: "authenticated",
+      user: storedUser,
+      refreshed: true,
+      tokens: { accessToken: "new-access", refreshToken: "new-refresh" },
+      refreshExpiresAt: new Date(Date.now() + 60_000),
+    });
+
+    const result = await requireAuth(requestWithCookies(undefined, "refresh-token"));
+
+    expect(result.user).toEqual(storedUser);
+    expect(result.tokens).toEqual({
+      accessToken: "new-access",
+      refreshToken: "new-refresh",
+    });
+    expect(result.refreshExpiresAt).toBeInstanceOf(Date);
   });
 
-  it("throws when JWT verification fails", async () => {
-    verifyAccessToken.mockRejectedValue(new Error("invalid"));
-    await expect(requireAuth(requestWithCookie("bad-token"))).rejects.toBeInstanceOf(
-      UnauthorizedError
-    );
-  });
+  it("throws when session cannot be resolved", async () => {
+    resolveSession.mockResolvedValue({ status: "unauthenticated", cleared: true });
 
-  it("throws when user no longer exists", async () => {
-    limit.mockResolvedValue([]);
-    await expect(requireAuth(requestWithCookie("valid-token"))).rejects.toBeInstanceOf(
-      UnauthorizedError
-    );
+    await expect(requireAuth(requestWithCookies())).rejects.toBeInstanceOf(UnauthorizedError);
   });
 });

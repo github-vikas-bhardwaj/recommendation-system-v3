@@ -7,7 +7,8 @@ import { refreshTokens } from "@/lib/db/schema";
 
 import { signAccessToken } from "./jwt";
 import { generateRefreshToken, hashRefreshToken } from "./refresh-token";
-import type { SessionTokens } from "./session.types";
+import type { IssuedSession } from "./session.types";
+import { getAccessTokenMaxAgeSeconds, getRefreshTokenMaxAgeSeconds } from "./token-expiry";
 
 export class SessionInvalidError extends Error {
   constructor(message = "Invalid session") {
@@ -18,26 +19,33 @@ export class SessionInvalidError extends Error {
 
 function getRefreshExpiresAt(): Date {
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // matches JWT_REFRESH_EXPIRES_IN=7d
+  // Absolute session end = access lifetime + refresh grace after access expires.
+  expiresAt.setSeconds(
+    expiresAt.getSeconds() + getAccessTokenMaxAgeSeconds() + getRefreshTokenMaxAgeSeconds()
+  );
   return expiresAt;
 }
 
-export async function createSession(userId: string): Promise<SessionTokens> {
+export async function createSession(
+  userId: string,
+  options?: { refreshExpiresAt?: Date }
+): Promise<IssuedSession> {
+  const refreshExpiresAt = options?.refreshExpiresAt ?? getRefreshExpiresAt();
   const refreshToken = generateRefreshToken();
   const tokenHash = hashRefreshToken(refreshToken);
 
   await db.insert(refreshTokens).values({
     userId,
     tokenHash,
-    expiresAt: getRefreshExpiresAt(),
+    expiresAt: refreshExpiresAt,
   });
 
   const accessToken = await signAccessToken(userId);
 
-  return { accessToken, refreshToken };
+  return { accessToken, refreshToken, refreshExpiresAt };
 }
 
-export async function refreshSession(plainRefreshToken: string): Promise<SessionTokens> {
+export async function refreshSession(plainRefreshToken: string): Promise<IssuedSession> {
   const tokenHash = hashRefreshToken(plainRefreshToken);
 
   const [storedToken] = await db
@@ -64,8 +72,8 @@ export async function refreshSession(plainRefreshToken: string): Promise<Session
     .set({ revokedAt: new Date() })
     .where(eq(refreshTokens.id, storedToken.id));
 
-  // issue new pair
-  return createSession(storedToken.userId);
+  // Issue a new pair but keep the original absolute refresh expiry.
+  return createSession(storedToken.userId, { refreshExpiresAt: storedToken.expiresAt });
 }
 
 export async function revokeSession(plainRefreshToken: string): Promise<void> {

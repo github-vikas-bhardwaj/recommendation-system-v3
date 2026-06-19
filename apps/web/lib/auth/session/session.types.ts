@@ -9,3 +9,7 @@ export type SessionTokens = {
   accessToken: string;
   refreshToken: string; // plain string — for cookies only, never JSON responses
 };
+
+export type IssuedSession = SessionTokens & {
+  refreshExpiresAt: Date;
+};

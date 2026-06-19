@@ -73,21 +73,22 @@ describe("createSession", () => {
     const tokens = await createSession(USER_ID);
 
     expect(insert).toHaveBeenCalled();
-    expect(tokens).toEqual({
-      accessToken: "signed-access-token",
-      refreshToken: PLAIN_REFRESH,
-    });
+    expect(tokens.accessToken).toBe("signed-access-token");
+    expect(tokens.refreshToken).toBe(PLAIN_REFRESH);
+    expect(tokens.refreshExpiresAt).toBeInstanceOf(Date);
   });
 });
 
 describe("refreshSession", () => {
+  const originalExpiresAt = new Date(Date.now() + 60_000);
+
   beforeEach(() => {
     vi.clearAllMocks();
     limit.mockResolvedValue([
       {
         id: "token-row-id",
         userId: USER_ID,
-        expiresAt: new Date(Date.now() + 60_000),
+        expiresAt: originalExpiresAt,
       },
     ]);
     where.mockImplementation(() => ({ limit }));
@@ -105,6 +106,7 @@ describe("refreshSession", () => {
     expect(update).toHaveBeenCalled(); // revoke old
     expect(insert).toHaveBeenCalled(); // new row
     expect(tokens.accessToken).toBe("signed-access-token");
+    expect(tokens.refreshExpiresAt).toEqual(originalExpiresAt);
   });
 
   it("throws when refresh token is not found", async () => {

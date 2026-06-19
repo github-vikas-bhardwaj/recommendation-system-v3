@@ -38,7 +38,7 @@ export async function signupAction(
   try {
     const { user } = await createUser(result.data);
     const tokens = await createSession(user.id);
-    await setSessionCookiesInStore(tokens);
+    await setSessionCookiesInStore(tokens, tokens.refreshExpiresAt);
   } catch (error) {
     if (error instanceof SignupConflictError) {
       return { fieldErrors: { email: [error.message] } };

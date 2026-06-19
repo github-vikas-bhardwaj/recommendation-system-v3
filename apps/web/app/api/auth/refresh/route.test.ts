@@ -1,81 +1,72 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { refreshSession } = vi.hoisted(() => ({
-  refreshSession: vi.fn(),
+const { resolveSession } = vi.hoisted(() => ({
+  resolveSession: vi.fn(),
 }));
 
-vi.mock("@/lib/auth/session/session.server", () => ({
-  refreshSession,
-  SessionInvalidError: class SessionInvalidError extends Error {
-    constructor(message = "Invalid session") {
-      super(message);
-      this.name = "SessionInvalidError";
-    }
-  },
+vi.mock("@/lib/auth/session/resolve-session", () => ({
+  resolveSession,
 }));
 
-import { SessionInvalidError } from "@/lib/auth/session/session.server";
+import { GET } from "./route";
 
-import { POST } from "./route";
-
-function refreshRequest(refreshToken?: string): NextRequest {
-  if (refreshToken) {
-    return new NextRequest("http://localhost/api/auth/refresh", {
-      method: "POST",
-      headers: { Cookie: `refresh_token=${refreshToken}` },
-    });
-  }
-  return new NextRequest("http://localhost/api/auth/refresh", { method: "POST" });
+function refreshRequest(path = "/api/auth/refresh?redirect=%2Frecommend", cookies?: string) {
+  return new NextRequest(`http://localhost${path}`, {
+    headers: cookies ? { Cookie: cookies } : undefined,
+  });
 }
 
-describe("POST /api/auth/refresh", () => {
+describe("GET /api/auth/refresh", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    refreshSession.mockResolvedValue({
-      accessToken: "new-access-token",
-      refreshToken: "new-refresh-token",
+  });
+
+  it("redirects back with new cookies when session is refreshed", async () => {
+    resolveSession.mockResolvedValue({
+      status: "authenticated",
+      user: { id: "user-id", firstName: "Vikas", lastName: null, email: "v@example.com" },
+      refreshed: true,
+      tokens: { accessToken: "new-access", refreshToken: "new-refresh" },
+      refreshExpiresAt: new Date(Date.now() + 60_000),
     });
+
+    const response = await GET(
+      refreshRequest("/api/auth/refresh?redirect=%2Frecommend", "refresh_token=old-refresh")
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/recommend");
+    expect(response.cookies.get("access_token")?.value).toBe("new-access");
+    expect(response.cookies.get("refresh_token")?.value).toBe("new-refresh");
   });
 
-  it("returns 200 and rotates cookies when refresh token is valid", async () => {
-    const response = await POST(refreshRequest("old-refresh-token"));
+  it("redirects to signin and clears cookies when refresh token is expired", async () => {
+    resolveSession.mockResolvedValue({ status: "unauthenticated", cleared: true });
 
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true });
-    expect(refreshSession).toHaveBeenCalledWith("old-refresh-token");
+    const response = await GET(
+      refreshRequest("/api/auth/refresh?redirect=%2Frecommend", "refresh_token=expired")
+    );
 
-    expect(response.cookies.get("access_token")?.value).toBe("new-access-token");
-    expect(response.cookies.get("refresh_token")?.value).toBe("new-refresh-token");
-  });
-
-  it("returns 401 and clears cookies when refresh token is missing", async () => {
-    const response = await POST(refreshRequest());
-
-    expect(response.status).toBe(401);
-    expect(refreshSession).not.toHaveBeenCalled();
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/signin");
     expect(response.cookies.get("access_token")?.value).toBe("");
     expect(response.cookies.get("refresh_token")?.value).toBe("");
   });
 
-  it("returns 401 and clears cookies when refresh token is invalid", async () => {
-    refreshSession.mockRejectedValue(new SessionInvalidError());
+  it("redirects back without setting cookies when access token is still valid", async () => {
+    resolveSession.mockResolvedValue({
+      status: "authenticated",
+      user: { id: "user-id", firstName: "Vikas", lastName: null, email: "v@example.com" },
+      refreshed: false,
+    });
 
-    const response = await POST(refreshRequest("invalid-refresh-token"));
+    const response = await GET(
+      refreshRequest("/api/auth/refresh?redirect=%2Frecommend", "access_token=valid-access")
+    );
 
-    expect(response.status).toBe(401);
-    expect(response.cookies.get("access_token")?.value).toBe("");
-    expect(response.cookies.get("refresh_token")?.value).toBe("");
-  });
-
-  it("returns 500 for unexpected errors", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    refreshSession.mockRejectedValue(new Error("database unavailable"));
-
-    const response = await POST(refreshRequest("old-refresh-token"));
-
-    expect(response.status).toBe(500);
-    await expect(response.json()).resolves.toEqual({ error: "Something went wrong" });
-    consoleError.mockRestore();
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/recommend");
+    expect(response.cookies.get("access_token")).toBeUndefined();
   });
 });
