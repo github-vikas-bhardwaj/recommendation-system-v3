@@ -192,11 +192,13 @@ export default function AuthFlowPage() {
           <Code>{`apps/web/.env.example
 
 JWT_SECRET              → lib/auth/session/jwt.ts
-JWT_ACCESS_EXPIRES_IN   → lib/auth/session/jwt.ts (default 15m)
-JWT_REFRESH_EXPIRES_IN  → documented only; code uses hardcoded 7 days in session.server.ts
+JWT_ACCESS_EXPIRES_IN   → jwt.ts, token-expiry.ts, cookies.ts (default 15m)
+JWT_REFRESH_EXPIRES_IN  → token-expiry.ts, session.server.ts (refresh grace after access)
 DATABASE_URL            → lib/db/index.ts
 COOKIE_SECURE=true      → lib/auth/session/cookies.ts (npm run dev:https sets this)
-AI_API_URL              → app/api/recommend/route.ts`}</Code>
+AI_API_URL              → app/api/recommend/route.ts
+
+Testing: JWT_ACCESS_EXPIRES_IN=30s + JWT_REFRESH_EXPIRES_IN=30s → ~60s total session`}</Code>
         </section>
 
         <section className={styles.card}>
@@ -211,7 +213,10 @@ AI_API_URL              → app/api/recommend/route.ts`}</Code>
                 path: "apps/web/lib/auth/session/session.server.test.ts",
                 role: "create/refresh/revoke",
               },
-              { path: "apps/web/lib/auth/session/require-auth.test.ts", role: "API auth gate" },
+              {
+                path: "apps/web/lib/auth/session/require-auth.test.ts",
+                role: "API auth gate",
+              },
               {
                 path: "apps/web/app/(auth)/signup/actions/signup/signup.action.test.ts",
                 role: "Signup action",

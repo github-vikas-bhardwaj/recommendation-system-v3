@@ -16,8 +16,9 @@ Browser
   │  httpOnly cookies: access_token (JWT), refresh_token (opaque)
   ▼
 Next.js BFF (apps/web)
+  │  Proxy:         proxy.ts — expired access → GET /api/auth/refresh
   │  Server Actions: signup, signin, signout
-  │  API Routes:    POST /api/auth/refresh, POST /api/recommend
+  │  API Routes:    GET /api/auth/refresh, POST /api/recommend
   │  Pages:         /signup, /signin, /recommend (session guards)
   ▼
 PostgreSQL
@@ -31,14 +32,14 @@ LangServe /recommend/invoke
 
 ### Transport layer decision
 
-| Feature            | Transport                        | Why                                              |
-| ------------------ | -------------------------------- | ------------------------------------------------ |
-| Signup form        | **Server Action**                | Form + `useActionState`, field errors            |
-| Signin form        | **Server Action**                | Same                                             |
-| Sign out (header)  | **Server Action**                | Form submit in `Header`                          |
-| Current user check | **`getSessionUser()`**           | Server components (Header, pages) — no API route |
-| Token refresh      | **API** `POST /api/auth/refresh` | Cookie POST, no form                             |
-| Recommendations    | **API** `POST /api/recommend`    | BFF proxy to FastAPI                             |
+| Feature            | Transport                               | Why                                                 |
+| ------------------ | --------------------------------------- | --------------------------------------------------- |
+| Signup form        | **Server Action**                       | Form + `useActionState`, field errors               |
+| Signin form        | **Server Action**                       | Same                                                |
+| Sign out (header)  | **Server Action**                       | Form submit in `Header`                             |
+| Current user check | **`getSessionUser()`**                  | Server components (Header, pages) — read-only       |
+| Auto token refresh | **Proxy** + **GET** `/api/auth/refresh` | Cookie writes only in route handlers (Next.js rule) |
+| Recommendations    | **API** `POST /api/recommend`           | BFF proxy; `requireAuth` may refresh + set cookies  |
 
 There are **no** `POST /api/auth/signup` or `POST /api/auth/signin` routes — removed in favour of server actions.
 
@@ -48,15 +49,25 @@ There are **no** `POST /api/auth/signup` or `POST /api/auth/signin` routes — r
 
 ### Session core (`apps/web/lib/auth/session/`)
 
-| File                | Role                                                    |
-| ------------------- | ------------------------------------------------------- |
-| `session.types.ts`  | `SessionUser`, `SessionTokens` types                    |
-| `jwt.ts`            | Sign / verify access JWT (HS256, `jose`)                |
-| `refresh-token.ts`  | Generate opaque refresh token, SHA-256 hash             |
-| `session.server.ts` | `createSession`, `refreshSession`, `revokeSession`      |
-| `cookies.ts`        | Cookie names, set/clear (Route Handler + server action) |
-| `get-session.ts`    | `getSessionUser()` — pages + Header                     |
-| `require-auth.ts`   | `requireAuth(req)` — API route handlers                 |
+| File                     | Role                                                                |
+| ------------------------ | ------------------------------------------------------------------- |
+| `session.types.ts`       | `SessionUser`, `SessionTokens`, `IssuedSession` types               |
+| `jwt.ts`                 | Sign access JWT (HS256, `jose`)                                     |
+| `verify-access-token.ts` | Verify access JWT (shared by proxy + server code)                   |
+| `refresh-token.ts`       | Generate opaque refresh token, SHA-256 hash                         |
+| `token-expiry.ts`        | Parse `JWT_*_EXPIRES_IN` env strings to seconds                     |
+| `session.server.ts`      | `createSession`, `refreshSession`, `revokeSession`                  |
+| `resolve-session.ts`     | `resolveSession()` — try access, else refresh, else unauthenticated |
+| `cookies.ts`             | Cookie names, set/clear (route handlers + server actions)           |
+| `cookie-names.ts`        | Cookie name constants (safe for proxy import)                       |
+| `get-session.ts`         | `getSessionUser()` — read-only access JWT check for pages/Header    |
+| `require-auth.ts`        | `requireAuth(req)` — resolve session for API route handlers         |
+
+### Proxy
+
+| File                | Role                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `apps/web/proxy.ts` | On page navigation: if access expired but refresh valid → redirect to refresh route |
 
 ### Signup (`apps/web/lib/auth/signup/`)
 
@@ -116,7 +127,7 @@ There are **no** `POST /api/auth/signup` or `POST /api/auth/signin` routes — r
 
 | File                            | Route                                 |
 | ------------------------------- | ------------------------------------- |
-| `app/api/auth/refresh/route.ts` | `POST /api/auth/refresh`              |
+| `app/api/auth/refresh/route.ts` | `GET /api/auth/refresh`               |
 | `app/api/recommend/route.ts`    | `POST /api/recommend` (protected BFF) |
 
 ### Layout & protected pages
@@ -140,6 +151,8 @@ There are **no** `POST /api/auth/signup` or `POST /api/auth/signin` routes — r
 | File                                                     | Covers                |
 | -------------------------------------------------------- | --------------------- |
 | `lib/auth/session/jwt.test.ts`                           | JWT sign/verify       |
+| `lib/auth/session/token-expiry.test.ts`                  | Duration parsing      |
+| `lib/auth/session/resolve-session.test.ts`               | Session resolution    |
 | `lib/auth/session/refresh-token.test.ts`                 | Hashing               |
 | `lib/auth/session/session.server.test.ts`                | create/refresh/revoke |
 | `lib/auth/session/require-auth.test.ts`                  | API auth gate         |
@@ -159,10 +172,12 @@ There are **no** `POST /api/auth/signup` or `POST /api/auth/signin` routes — r
 
 ### Two tokens
 
-| Cookie          | Value            | Stored in DB?      | Lifetime                          | Used for                      |
-| --------------- | ---------------- | ------------------ | --------------------------------- | ----------------------------- |
-| `access_token`  | JWT (HS256)      | No                 | ~15 min (`JWT_ACCESS_EXPIRES_IN`) | Every auth check              |
-| `refresh_token` | Random base64url | Yes (SHA-256 hash) | 7 days (hardcoded in code)        | `POST /api/auth/refresh` only |
+| Cookie          | Value            | Stored in DB?      | Lifetime                                                                     | Used for                |
+| --------------- | ---------------- | ------------------ | ---------------------------------------------------------------------------- | ----------------------- |
+| `access_token`  | JWT (HS256)      | No                 | `JWT_ACCESS_EXPIRES_IN` (default `15m`)                                      | Every auth check        |
+| `refresh_token` | Random base64url | Yes (SHA-256 hash) | Absolute session end = access TTL + refresh grace (`JWT_REFRESH_EXPIRES_IN`) | Refresh + rotation only |
+
+On **rotation**, the new refresh token keeps the **original absolute `expires_at`** from sign-in (session does not extend indefinitely).
 
 ### JWT payload (`lib/auth/session/jwt.ts`)
 
@@ -184,7 +199,7 @@ httpOnly: true
 sameSite: "lax"
 path: "/"
 secure: true when NODE_ENV=production OR COOKIE_SECURE=true
-maxAge: access 15min, refresh 7 days
+maxAge: access from JWT_ACCESS_EXPIRES_IN; refresh from remaining session time
 ```
 
 Use `npm run dev:https -w web` locally so `COOKIE_SECURE=true` and Secure cookies work.
@@ -198,7 +213,7 @@ Use `npm run dev:https -w web` locally so `COOKIE_SECURE=true` and Secure cookie
 **`refresh_tokens`**
 
 - `id`, `user_id` → users, `token_hash` (unique), `expires_at`, `revoked_at`, `created_at`
-- Rotation: old row gets `revoked_at` set; new row inserted on refresh
+- Rotation: old row gets `revoked_at` set; new row inserted on refresh (same absolute `expires_at`)
 
 ---
 
@@ -228,9 +243,9 @@ Use `npm run dev:https -w web` locally so `COOKIE_SECURE=true` and Secure cookie
        │    └─ lib/auth/db-errors.ts → duplicate email → SignupConflictError
        ├─ lib/auth/session/session.server.ts → createSession(user.id)
        │    ├─ lib/auth/session/refresh-token.ts → generate + hash
-       │    ├─ insert refresh_tokens row
+       │    ├─ insert refresh_tokens row (expires_at = access + refresh grace)
        │    └─ lib/auth/session/jwt.ts → signAccessToken(userId)
-       ├─ lib/auth/session/cookies.ts → setSessionCookiesInStore(tokens)
+       ├─ lib/auth/session/cookies.ts → setSessionCookiesInStore(tokens, refreshExpiresAt)
        └─ redirect("/recommend")
 
 3. Page guard (before form shown) ─────────────────────────────────
@@ -272,7 +287,7 @@ Use `npm run dev:https -w web` locally so `COOKIE_SECURE=true` and Secure cookie
        │    ├─ bcrypt.compare(password, passwordHash)
        │    └─ SigninInvalidCredentialsError (generic message)
        ├─ session.server.ts → createSession(user.id)
-       ├─ cookies.ts → setSessionCookiesInStore(tokens)
+       ├─ cookies.ts → setSessionCookiesInStore(tokens, refreshExpiresAt)
        └─ redirect("/recommend")
 
 3. Page guard ────────────────────────────────────────────────────
@@ -293,7 +308,7 @@ Use `npm run dev:https -w web` locally so `COOKIE_SECURE=true` and Secure cookie
 
 ## 6. Flow 3 — Session read (pages & header)
 
-**No HTTP round-trip** — server components read cookies directly.
+**No HTTP round-trip** — server components read cookies directly. **Read-only** (no cookie writes).
 
 ### `getSessionUser()` — `lib/auth/session/get-session.ts`
 
@@ -306,18 +321,60 @@ cookies().get("access_token")
 
 **Used by:**
 
-| File                           | Behaviour                        |
-| ------------------------------ | -------------------------------- |
-| `components/header/Header.tsx` | Show Sign up/Sign in vs Sign out |
-| `app/(auth)/signup/page.tsx`   | Redirect if logged in            |
-| `app/(auth)/signin/page.tsx`   | Redirect if logged in            |
-| `app/recommend/page.tsx`       | Redirect to `/signup` if null    |
+| File                           | Behaviour                          |
+| ------------------------------ | ---------------------------------- |
+| `components/header/Header.tsx` | Show Sign up / Sign in vs Sign out |
+| `app/(auth)/signup/page.tsx`   | Redirect if logged in              |
+| `app/(auth)/signin/page.tsx`   | Redirect if logged in              |
+| `app/recommend/page.tsx`       | Redirect to `/signup` if null      |
 
-**Important gap:** If access JWT is **expired** but refresh cookie is still valid, `getSessionUser()` returns `null`. There is **no automatic refresh** on page load yet. User appears logged out until they call `POST /api/auth/refresh` or sign in again.
+**Important:** `getSessionUser()` does **not** refresh tokens or write cookies. By the time a page renders, `proxy.ts` should have already refreshed expired access tokens (see Flow 4). If both tokens are dead, it returns `null`.
 
 ---
 
-## 7. Flow 4 — Protected page (/recommend)
+## 7. Flow 4 — Auto-refresh (proxy + GET /api/auth/refresh)
+
+**When:** User navigates or refreshes a page while access JWT is expired but refresh cookie is still valid  
+**Trigger:** Page load / navigation (not polling)
+
+### Why proxy + route handler?
+
+Next.js only allows cookie writes in **Route Handlers**, **Server Actions**, or **Proxy** — not in Server Components. `getSessionUser()` cannot call `cookies().set()`.
+
+### Call chain
+
+```
+1. Browser GET /recommend (access JWT expired, refresh cookie valid)
+   ▼
+2. apps/web/proxy.ts
+     proxy(request)
+       ├─ refresh_token cookie present?
+       ├─ access_token missing or verifyAccessToken() fails?
+       └─ redirect → /api/auth/refresh?redirect=/recommend
+
+3. app/api/auth/refresh/route.ts
+     GET(req)
+       ├─ resolve-session.ts → resolveSession(access, refresh)
+       │    ├─ access valid → refreshed: false
+       │    ├─ access expired + refresh valid → refreshSession() → refreshed: true
+       │    └─ refresh expired/invalid → unauthenticated, cleared: true
+       ├─ refreshed → setSessionCookies(response, tokens) + redirect /recommend
+       └─ unauthenticated → clearSessionCookies(response) + redirect /signin
+
+4. Browser GET /recommend (new access_token cookie)
+   ▼
+5. proxy.ts → access valid → NextResponse.next()
+   ▼
+6. recommend/page.tsx → getSessionUser() OK → render page
+```
+
+**Matcher:** Proxy runs on page routes only (excludes `/api/*`, static assets).
+
+**API routes** (`POST /api/recommend`) are excluded from proxy. They use `requireAuth()` → `resolveSession()` and set refreshed cookies on the JSON response directly.
+
+---
+
+## 8. Flow 5 — Protected page (/recommend)
 
 ### Server guard
 
@@ -334,40 +391,16 @@ app/recommend/page.tsx
 app/recommend/_components/RecommendPanel.tsx
   fetch("POST /api/recommend", { body: { input } })
     └─ app/api/recommend/route.ts
-         ├─ requireAuth(req)          ← lib/auth/session/require-auth.ts
+         ├─ requireAuth(req)          ← resolve-session.ts
+         │    (may return new tokens if access was expired)
+         ├─ setSessionCookies on response if refreshed
          ├─ validate body.input
          ├─ fetch(AI_API_URL/recommend/invoke)
          │    headers: { "X-User-Id": user.id }   ← set server-side only
          └─ return LangServe JSON
 ```
 
-**Trust boundary:** Browser never sends `X-User-Id`. BFF derives it from verified JWT.
-
----
-
-## 8. Flow 5 — POST /api/auth/refresh
-
-**When:** Access JWT expired (~15 min), refresh cookie still valid  
-**Transport:** API Route
-
-### Call chain
-
-```
-app/api/auth/refresh/route.ts
-  POST(req)
-    ├─ req.cookies.get("refresh_token")
-    ├─ session.server.ts → refreshSession(plainToken)
-    │    ├─ hash token, lookup refresh_tokens (not revoked, not expired)
-    │    ├─ SET revoked_at on old row  ← rotation
-    │    └─ createSession(userId)      ← new pair
-    ├─ cookies.ts → setSessionCookies(response, newTokens)
-    └─ 200 { ok: true }
-
-  On failure:
-    → 401 + clearSessionCookies(response)
-```
-
-**Note:** No UI calls this automatically today. Manual curl or future client hook required.
+**Trust boundary:** Browser never sends `X-User-Id`. BFF derives it from verified session.
 
 ---
 
@@ -413,6 +446,7 @@ After signout:
    → redirect /recommend
 
 3. /recommend loads
+   → proxy.ts: access valid → pass through
    → recommend/page.tsx → getSessionUser() OK
    → Header shows "Sign out"
 
@@ -420,12 +454,17 @@ After signout:
    → RecommendPanel fetch POST /api/recommend
    → requireAuth → proxy to FastAPI with X-User-Id
 
-5. ~15 min later access JWT expires
-   → getSessionUser() returns null
-   → /recommend redirects to /signup  ⚠ known gap
-   → Fix: call POST /api/auth/refresh or implement auto-refresh
+5. Access JWT expires (e.g. after JWT_ACCESS_EXPIRES_IN)
+   → User refreshes page or navigates
+   → proxy.ts redirects to GET /api/auth/refresh
+   → new cookies set → redirect back to /recommend
+   → user stays logged in
 
-6. User clicks Sign out
+6. Refresh grace expires (access TTL + JWT_REFRESH_EXPIRES_IN from sign-in)
+   → proxy → GET /api/auth/refresh → refresh invalid
+   → cookies cleared → redirect /signin
+
+7. User clicks Sign out
    → signout.action.ts
    → refresh token revoked in DB
    → cookies cleared
@@ -436,26 +475,34 @@ After signout:
 
 ## 11. Environment variables
 
-| Variable                 | File consumed                 | Purpose                                                                    |
-| ------------------------ | ----------------------------- | -------------------------------------------------------------------------- |
-| `DATABASE_URL`           | `lib/db/index.ts`             | PostgreSQL connection                                                      |
-| `JWT_SECRET`             | `lib/auth/session/jwt.ts`     | HS256 signing key (≥32 chars)                                              |
-| `JWT_ACCESS_EXPIRES_IN`  | `lib/auth/session/jwt.ts`     | Access token TTL (default `15m`)                                           |
-| `JWT_REFRESH_EXPIRES_IN` | `.env.example` only           | **Not read by code** — refresh TTL hardcoded 7 days in `session.server.ts` |
-| `COOKIE_SECURE`          | `lib/auth/session/cookies.ts` | `true` for Secure cookies in dev                                           |
-| `AI_API_URL`             | `app/api/recommend/route.ts`  | FastAPI base URL                                                           |
+| Variable                 | File consumed                             | Purpose                                                                   |
+| ------------------------ | ----------------------------------------- | ------------------------------------------------------------------------- |
+| `DATABASE_URL`           | `lib/db/index.ts`                         | PostgreSQL connection                                                     |
+| `JWT_SECRET`             | `lib/auth/session/jwt.ts`                 | HS256 signing key (≥32 chars)                                             |
+| `JWT_ACCESS_EXPIRES_IN`  | `jwt.ts`, `token-expiry.ts`, `cookies.ts` | Access token TTL (default `15m`; e.g. `30s` for testing)                  |
+| `JWT_REFRESH_EXPIRES_IN` | `token-expiry.ts`, `session.server.ts`    | Refresh grace after access expires (default `7d`; e.g. `30s` for testing) |
+| `COOKIE_SECURE`          | `lib/auth/session/cookies.ts`             | `true` for Secure cookies in dev                                          |
+| `AI_API_URL`             | `app/api/recommend/route.ts`              | FastAPI base URL                                                          |
+
+**Testing example** (`apps/web/.env.local`):
+
+```env
+JWT_ACCESS_EXPIRES_IN=30s
+JWT_REFRESH_EXPIRES_IN=30s
+```
+
+Total session lifetime ≈ 60s (30s access + 30s refresh grace). Restart dev server after changing env.
 
 ---
 
 ## 12. Known gaps (for analysis)
 
-| Gap                                 | Impact                                          | Relevant files                        |
-| ----------------------------------- | ----------------------------------------------- | ------------------------------------- |
-| No auto-refresh on expired access   | User kicked to signup with valid refresh cookie | `get-session.ts`, no middleware       |
-| FastAPI has no auth                 | Direct `:8000` bypasses BFF                     | `apps/api/main.py`                    |
-| `X-User-Id` not validated in Python | Header is trust-on-first-use                    | `apps/api/`                           |
-| No rate limiting                    | Brute-force signup/signin                       | actions only                          |
-| Refresh TTL env unused              | Config drift                                    | `session.server.ts` vs `.env.example` |
+| Gap                                 | Impact                                         | Relevant files     |
+| ----------------------------------- | ---------------------------------------------- | ------------------ |
+| FastAPI has no auth                 | Direct `:8000` bypasses BFF                    | `apps/api/main.py` |
+| `X-User-Id` not validated in Python | Header is trust-on-first-use                   | `apps/api/`        |
+| No rate limiting                    | Brute-force signup/signin                      | actions only       |
+| No client-side session polling      | Logout/refresh only on navigation or API calls | by design          |
 
 ---
 
@@ -464,7 +511,9 @@ After signout:
 | Question                          | Start here                                                 |
 | --------------------------------- | ---------------------------------------------------------- |
 | How is password hashed?           | `lib/auth/signup/signup.server.ts`                         |
-| How is JWT verified?              | `lib/auth/session/jwt.ts`                                  |
+| How is JWT verified?              | `lib/auth/session/verify-access-token.ts`                  |
+| Where does auto-refresh happen?   | `apps/web/proxy.ts` + `app/api/auth/refresh/route.ts`      |
+| Where is refresh logic shared?    | `lib/auth/session/resolve-session.ts`                      |
 | Where are cookies set from forms? | `lib/auth/session/cookies.ts` → `setSessionCookiesInStore` |
 | Where are cookies set from API?   | `cookies.ts` → `setSessionCookies`                         |
 | How does refresh rotation work?   | `lib/auth/session/session.server.ts` → `refreshSession`    |
