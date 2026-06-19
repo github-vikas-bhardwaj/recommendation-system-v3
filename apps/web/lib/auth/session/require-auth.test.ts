@@ -34,11 +34,11 @@ import { requireAuth, UnauthorizedError } from "./require-auth";
 
 function requestWithCookie(token?: string): NextRequest {
   if (token) {
-    return new NextRequest("http://localhost/api/auth/me", {
+    return new NextRequest("http://localhost/api/recommend", {
       headers: { Cookie: `access_token=${token}` },
     });
   }
-  return new NextRequest("http://localhost/api/auth/me");
+  return new NextRequest("http://localhost/api/recommend");
 }
 
 describe("requireAuth", () => {

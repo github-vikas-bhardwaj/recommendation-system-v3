@@ -35,7 +35,7 @@ Opens **https://localhost:3000**. Next.js generates a trusted local certificate 
 Use **https** when testing session API routes with curl (cookies may use the `Secure` flag):
 
 ```bash
-curl -k -b cookies.txt https://localhost:3000/api/auth/me
+curl -k -b cookies.txt -X POST https://localhost:3000/api/auth/refresh
 ```
 
 (`-k` skips cert verification if needed; trusted certs usually work without it.)

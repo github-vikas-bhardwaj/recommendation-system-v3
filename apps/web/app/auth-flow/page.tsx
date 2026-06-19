@@ -1,9 +1,29 @@
 import Link from "next/link";
 
 import styles from "./auth-flow.module.css";
+import {
+  authFlowSteps,
+  authOverview,
+  dbFiles,
+  sessionFiles,
+  transportTable,
+} from "./auth-flow-content";
 
 function Code({ children }: { children: string }) {
   return <pre className={styles.codeBlock}>{children}</pre>;
+}
+
+function FileList({ files }: { files: { path: string; role: string }[] }) {
+  return (
+    <ul className={styles.fileList}>
+      {files.map((file) => (
+        <li key={file.path}>
+          <code className={styles.filePath}>{file.path}</code>
+          <span className={styles.fileRole}>{file.role}</span>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function Step({
@@ -18,7 +38,7 @@ function Step({
   children: React.ReactNode;
 }) {
   return (
-    <section className={styles.card}>
+    <section className={styles.card} id={`step-${number}`}>
       <div className={styles.stepHeader}>
         <div className={styles.stepNum}>{number}</div>
         <div>
@@ -40,23 +60,22 @@ export default function AuthFlowPage() {
         </Link>
 
         <header className={styles.hero}>
-          <h1>How auth works</h1>
+          <h1>Auth flow — technical reference</h1>
           <p>
-            Step-by-step guide: signup → signin → session cookies → protected APIs → refresh →
-            logout. Run <span className={styles.tag}>npm run dev:https -w web</span> first.
+            E2E trace through signup, signin, session cookies, protected APIs, refresh, and sign
+            out. Every step lists file paths to inspect in the repo.
+          </p>
+          <p className={styles.heroNote}>
+            Full markdown doc (for IDE analysis):{" "}
+            <code className={styles.inlineCode}>docs/AUTH-FLOW.md</code>
           </p>
         </header>
 
         <section className={styles.card}>
-          <h2>Overview (30 seconds)</h2>
+          <h2>Overview</h2>
+          <p className={styles.bodyText}>{authOverview.intro}</p>
           <ol className={styles.overviewList}>
-            {[
-              "Signup creates a user. No cookies.",
-              "Signin checks password and sets two httpOnly cookies.",
-              "Protected routes read the access cookie on every request.",
-              "Refresh gets new cookies when access expires (~15 min).",
-              "Logout revokes refresh token and clears cookies.",
-            ].map((text, i) => (
+            {authOverview.flows.map((text, i) => (
               <li key={text}>
                 <span className={styles.overviewNum}>{i + 1}.</span>
                 <span>{text}</span>
@@ -67,165 +86,148 @@ export default function AuthFlowPage() {
           <div className={styles.tokenGrid}>
             <div className={styles.tokenBox}>
               <strong>access_token</strong>
-              <p>JWT · 15 min · every API call · not in DB</p>
+              <p>JWT · HS256 · ~15 min · lib/auth/session/jwt.ts · not in DB</p>
             </div>
             <div className={styles.tokenBox}>
               <strong>refresh_token</strong>
-              <p>Random string · 7 days · only /refresh · hashed in DB</p>
+              <p>Opaque · 7 days · SHA-256 in refresh_tokens · rotation on refresh</p>
             </div>
           </div>
 
           <div className={styles.block} style={{ marginTop: "1.5rem" }}>
             <p className={styles.sectionLabel}>Architecture</p>
-            <Code>{`Browser  →  Next.js https://localhost:3000  →  FastAPI :8000
-(cookies)     verifies JWT      gets X-User-Id`}</Code>
+            <Code>{`Browser ──[httpOnly cookies]──► Next.js (apps/web)
+                                  │
+                    Server Actions: signup, signin, signout
+                    API Routes:     me, refresh, recommend
+                                  │
+                                  ▼
+                              PostgreSQL (users, refresh_tokens)
+                                  │
+                    POST /api/recommend ──► FastAPI (X-User-Id header)`}</Code>
           </div>
         </section>
 
-        <Step number={1} title="Signup" summary="Create account. You are NOT logged in yet.">
-          <p className={styles.bodyText}>
-            <span className={styles.tag}>/signup</span> — server action validates input, hashes
-            password, saves to <code>users</code> table.
+        <section className={styles.card}>
+          <h2>Transport layer</h2>
+          <p className={styles.cardSummary}>
+            Forms use server actions. Session APIs use route handlers.
           </p>
-          <div className={styles.callout}>
-            Signup does not set cookies. <strong>Sign in next.</strong>
-          </div>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>Try it</p>
-            <Code>{`Open https://localhost:3000/signup
-Fill the form and submit`}</Code>
-          </div>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>On success</p>
-            <Code>{`Shows confirmation message.
-User is created in the database.
-No session cookies yet.`}</Code>
-          </div>
-        </Step>
-
-        <Step number={2} title="Signin" summary="Verify password. Get session cookies.">
-          <p className={styles.bodyText}>
-            <span className={styles.tag}>/signin</span> — server action on success:
-          </p>
-          <ul className={styles.list}>
-            <li>
-              Insert row in <code>refresh_tokens</code> (hashed)
-            </li>
-            <li>Sign JWT with your user id</li>
-            <li>
-              Set <code>access_token</code> + <code>refresh_token</code> cookies
-            </li>
-          </ul>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>Try it</p>
-            <Code>{`Open https://localhost:3000/signin
-Enter email + password and submit`}</Code>
-          </div>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>On success</p>
-            <Code>{`Browser stores httpOnly cookies:
-  access_token  (JWT, ~15 min)
-  refresh_token (opaque, ~7 days)`}</Code>
-          </div>
-        </Step>
-
-        <Step number={3} title="Me" summary="Check who is logged in.">
-          <p className={styles.bodyText}>
-            <span className={styles.tag}>GET /api/auth/me</span> — verify access JWT, load user from
-            DB.
-          </p>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>Try it</p>
-            <Code>curl -b cookies.txt https://localhost:3000/api/auth/me</Code>
-          </div>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>Response</p>
-            <Code>{`200 → { "user": { "id": "...", "firstName": "Vikas" } }
-401 → { "error": "Unauthorized" }`}</Code>
-          </div>
-        </Step>
-
-        <Step number={4} title="Protected route" summary="Recommendations need a session.">
-          <p className={styles.bodyText}>
-            <span className={styles.tag}>POST /api/recommend</span> — calls{" "}
-            <code>requireAuth()</code>. No cookie → 401.
-          </p>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>Without cookies</p>
-            <Code>{`curl -X POST https://localhost:3000/api/recommend \\
-  -H "Content-Type: application/json" \\
-  -d '{"input":"sci-fi books"}'`}</Code>
-          </div>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>With cookies</p>
-            <Code>{`curl -b cookies.txt -X POST https://localhost:3000/api/recommend \\
-  -H "Content-Type: application/json" \\
-  -d '{"input":"sci-fi books"}'`}</Code>
-          </div>
-          <p className={styles.bodyText}>
-            Next.js adds <span className={styles.tag}>X-User-Id</span> when calling FastAPI.
-          </p>
-        </Step>
-
-        <Step number={5} title="Refresh" summary="New cookies when access expires.">
-          <p className={styles.bodyText}>
-            <span className={styles.tag}>POST /api/auth/refresh</span> — validates refresh cookie,
-            revokes old DB row, issues new tokens.
-          </p>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>Try it</p>
-            <Code>{`curl -b cookies.txt -c cookies.txt \\
-  -X POST https://localhost:3000/api/auth/refresh`}</Code>
-          </div>
-          <div className={styles.callout}>Each refresh invalidates the previous refresh token.</div>
-        </Step>
-
-        <Step number={6} title="Logout" summary="End the session.">
-          <p className={styles.bodyText}>
-            <span className={styles.tag}>Sign out</span> in the header — server action revokes the
-            refresh token and clears cookies.
-          </p>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>Try it</p>
-            <Code>{`Click "Sign out" in the header
-→ redirects to home
-→ signup / sign in links return`}</Code>
-          </div>
-          <div className={styles.block}>
-            <p className={styles.sectionLabel}>Confirm logged out</p>
-            <Code>{`Visit https://localhost:3000/recommend
-→ redirects to /signup`}</Code>
-          </div>
-        </Step>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th>Transport</th>
+                <th>Entry file</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transportTable.map((row) => (
+                <tr key={row.feature}>
+                  <td>{row.feature}</td>
+                  <td>
+                    <span className={styles.tag}>{row.transport}</span>
+                  </td>
+                  <td>
+                    <code className={styles.tablePath}>apps/web/{row.path}</code>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
 
         <section className={styles.card}>
-          <h2>Quick reference</h2>
-          <p className={styles.cardSummary}>
-            Signup and signin use forms (server actions). Session APIs use curl after signing in via
-            the browser.
-          </p>
+          <h2>Session core files</h2>
+          <p className={styles.cardSummary}>Read these first to understand the session model.</p>
+          <FileList files={sessionFiles} />
+        </section>
 
-          <div style={{ marginTop: "1.5rem" }}>
-            {[
-              ["1. Signup (UI)", "https://localhost:3000/signup"],
-              ["2. Signin (UI)", "https://localhost:3000/signin"],
-              ["3. Me", "curl -b cookies.txt https://localhost:3000/api/auth/me"],
-              [
-                "4. Recommend",
-                `curl -b cookies.txt -X POST https://localhost:3000/api/recommend -H "Content-Type: application/json" -d '{"input":"sci-fi"}'`,
-              ],
-              [
-                "5. Refresh",
-                "curl -b cookies.txt -c cookies.txt -X POST https://localhost:3000/api/auth/refresh",
-              ],
-              ["6. Logout", 'Click "Sign out" in the header'],
-            ].map(([label, cmd]) => (
-              <div key={label} className={styles.cheatItem}>
-                <strong>{label}</strong>
-                <pre>{cmd}</pre>
+        <section className={styles.card}>
+          <h2>Database files</h2>
+          <FileList files={dbFiles} />
+        </section>
+
+        <nav className={styles.jumpNav} aria-label="Flow steps">
+          {authFlowSteps.map((step) => (
+            <a key={step.number} href={`#step-${step.number}`} className={styles.jumpLink}>
+              {step.number}. {step.title}
+            </a>
+          ))}
+        </nav>
+
+        {authFlowSteps.map((step) => (
+          <Step key={step.number} number={step.number} title={step.title} summary={step.summary}>
+            <p className={styles.bodyText}>
+              <strong>Transport:</strong> <span className={styles.tag}>{step.transport}</span>
+            </p>
+            <p className={styles.bodyText}>
+              <strong>Entry point:</strong>{" "}
+              <code className={styles.inlineCode}>{step.entryPoint}</code>
+            </p>
+
+            <div className={styles.block}>
+              <p className={styles.sectionLabel}>Call chain</p>
+              <Code>{step.callChain}</Code>
+            </div>
+
+            <div className={styles.block}>
+              <p className={styles.sectionLabel}>Files to inspect</p>
+              <FileList files={step.files} />
+            </div>
+
+            {step.tryIt ? (
+              <div className={styles.block}>
+                <p className={styles.sectionLabel}>Try it</p>
+                <Code>{step.tryIt}</Code>
               </div>
-            ))}
-          </div>
+            ) : null}
+
+            {step.note ? <div className={styles.callout}>{step.note}</div> : null}
+          </Step>
+        ))}
+
+        <section className={styles.card}>
+          <h2>Environment variables</h2>
+          <Code>{`apps/web/.env.example
+
+JWT_SECRET              → lib/auth/session/jwt.ts
+JWT_ACCESS_EXPIRES_IN   → lib/auth/session/jwt.ts (default 15m)
+JWT_REFRESH_EXPIRES_IN  → documented only; code uses hardcoded 7 days in session.server.ts
+DATABASE_URL            → lib/db/index.ts
+COOKIE_SECURE=true      → lib/auth/session/cookies.ts (npm run dev:https sets this)
+AI_API_URL              → app/api/recommend/route.ts`}</Code>
+        </section>
+
+        <section className={styles.card}>
+          <h2>Test files</h2>
+          <p className={styles.cardSummary}>
+            Mirror the flows above — start here when changing auth logic.
+          </p>
+          <FileList
+            files={[
+              { path: "apps/web/lib/auth/session/jwt.test.ts", role: "JWT sign/verify" },
+              {
+                path: "apps/web/lib/auth/session/session.server.test.ts",
+                role: "create/refresh/revoke",
+              },
+              { path: "apps/web/lib/auth/session/require-auth.test.ts", role: "API auth gate" },
+              {
+                path: "apps/web/app/(auth)/signup/actions/signup/signup.action.test.ts",
+                role: "Signup action",
+              },
+              {
+                path: "apps/web/app/(auth)/signin/actions/signin/signin.action.test.ts",
+                role: "Signin action",
+              },
+              {
+                path: "apps/web/app/actions/signout/signout.action.test.ts",
+                role: "Signout action",
+              },
+              { path: "apps/web/app/api/auth/refresh/route.test.ts", role: "Refresh API" },
+              { path: "apps/web/app/api/recommend/route.test.ts", role: "Recommend BFF" },
+            ]}
+          />
         </section>
       </div>
     </div>
