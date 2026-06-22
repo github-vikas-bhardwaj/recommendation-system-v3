@@ -1,0 +1,32 @@
+.spinner {
+  display: inline-block;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: currentcolor;
+  border-right-color: transparent;
+  animation: spin 0.7s linear infinite;
+}
+
+.sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 2px;
+}
+
+.md {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-width: 2px;
+}
+
+.lg {
+  width: 2rem;
+  height: 2rem;
+  border-width: 3px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
