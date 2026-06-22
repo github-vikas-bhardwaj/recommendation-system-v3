@@ -132,13 +132,12 @@ There are **no** `POST /api/auth/signup` or `POST /api/auth/signin` routes — r
 
 ### Layout & protected pages
 
-| File                                           | Role                                 |
-| ---------------------------------------------- | ------------------------------------ |
-| `app/layout.tsx`                               | Renders global `Header`              |
-| `components/header/Header.tsx`                 | Auth-aware nav; signout form         |
-| `components/auth/AuthSplitLayout.tsx`          | Shared signup/signin layout          |
-| `app/recommend/page.tsx`                       | Server guard → `getSessionUser()`    |
-| `app/recommend/_components/RecommendPanel.tsx` | Client UI; `fetch('/api/recommend')` |
+| File                                  | Role                              |
+| ------------------------------------- | --------------------------------- |
+| `app/layout.tsx`                      | Renders global `Header`           |
+| `components/header/Header.tsx`        | Auth-aware nav; signout form      |
+| `components/auth/AuthSplitLayout.tsx` | Shared signup/signin layout       |
+| `app/recommend/page.tsx`              | Server guard → `getSessionUser()` |
 
 ### Config
 
@@ -382,14 +381,13 @@ Next.js only allows cookie writes in **Route Handlers**, **Server Actions**, or 
 app/recommend/page.tsx
   getSessionUser()
     → null → redirect("/signup")
-    → user → render RecommendPanel(firstName)
+    → user → render welcome page
 ```
 
-### Client API call
+### API (when called directly)
 
 ```
-app/recommend/_components/RecommendPanel.tsx
-  fetch("POST /api/recommend", { body: { input } })
+POST /api/recommend  (curl, fetch, etc.)
     └─ app/api/recommend/route.ts
          ├─ requireAuth(req)          ← resolve-session.ts
          │    (may return new tokens if access was expired)
@@ -450,8 +448,7 @@ After signout:
    → recommend/page.tsx → getSessionUser() OK
    → Header shows "Sign out"
 
-4. User submits recommendation
-   → RecommendPanel fetch POST /api/recommend
+4. User calls POST /api/recommend (curl or client)
    → requireAuth → proxy to FastAPI with X-User-Id
 
 5. Access JWT expires (e.g. after JWT_ACCESS_EXPIRES_IN)

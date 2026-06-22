@@ -181,15 +181,14 @@ export const authFlowSteps: AuthFlowStep[] = [
     title: "POST /api/recommend (protected BFF)",
     summary: "Requires session; may refresh cookies; proxies to FastAPI with X-User-Id.",
     transport: "API Route",
-    entryPoint: "apps/web/app/recommend/_components/RecommendPanel.tsx",
-    callChain: `RecommendPanel fetch POST /api/recommend
+    entryPoint: "apps/web/app/api/recommend/route.ts",
+    callChain: `curl/fetch POST /api/recommend
   → app/api/recommend/route.ts
     → requireAuth(req) → resolveSession()
     → setSessionCookies on response if refreshed
     → fetch(AI_API_URL/recommend/invoke)
        header: X-User-Id = user.id  (server-set, not from browser)`,
     files: [
-      { path: "apps/web/app/recommend/_components/RecommendPanel.tsx", role: "Client fetch" },
       { path: "apps/web/app/recommend/page.tsx", role: "Server page guard" },
       { path: "apps/web/app/api/recommend/route.ts", role: "BFF proxy" },
       { path: "apps/web/lib/auth/session/require-auth.ts", role: "API session gate" },
