@@ -2,14 +2,29 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { authenticateUser, createSession, setSessionCookiesInStore, redirect } = vi.hoisted(() => ({
-  authenticateUser: vi.fn(),
-  createSession: vi.fn(),
-  setSessionCookiesInStore: vi.fn(),
-  redirect: vi.fn((path: string) => {
-    throw new Error(`REDIRECT:${path}`);
-  }),
-}));
+const {
+  allowedDecision,
+  authenticateUser,
+  createSession,
+  protectAuthAction,
+  redirect,
+  setSessionCookiesInStore,
+} = vi.hoisted(() => {
+  const allowedDecision = {
+    isDenied: () => false,
+  };
+
+  return {
+    allowedDecision,
+    authenticateUser: vi.fn(),
+    createSession: vi.fn(),
+    protectAuthAction: vi.fn().mockResolvedValue(allowedDecision),
+    setSessionCookiesInStore: vi.fn(),
+    redirect: vi.fn((path: string) => {
+      throw new Error(`REDIRECT:${path}`);
+    }),
+  };
+});
 
 vi.mock("next/navigation", () => ({
   redirect,
@@ -31,6 +46,11 @@ vi.mock("@/lib/auth/signin/signin.server", () => ({
       this.name = "SigninInvalidCredentialsError";
     }
   },
+}));
+
+vi.mock("@/lib/security/arcjet", () => ({
+  protectAuthAction,
+  rateLimitMessage: vi.fn(() => "Too many requests. Please try again later."),
 }));
 
 import { SigninInvalidCredentialsError } from "@/lib/auth/signin/signin.server";
@@ -56,6 +76,7 @@ function signinFormData(overrides: Record<string, string> = {}) {
 describe("signinAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    protectAuthAction.mockResolvedValue(allowedDecision);
   });
 
   it("creates a session and redirects to recommend on success", async () => {
@@ -89,6 +110,19 @@ describe("signinAction", () => {
       refreshExpiresAt
     );
     expect(redirect).toHaveBeenCalledWith("/recommend");
+  });
+
+  it("returns a rate limit error when Arcjet denies the request", async () => {
+    protectAuthAction.mockResolvedValue({
+      isDenied: () => true,
+      reason: { isRateLimit: () => true },
+    });
+
+    const result = await signinAction(initialSigninActionState, signinFormData());
+
+    expect(protectAuthAction).toHaveBeenCalledOnce();
+    expect(authenticateUser).not.toHaveBeenCalled();
+    expect(result.error).toBe("Too many requests. Please try again later.");
   });
 
   it("returns field errors when validation fails", async () => {

@@ -1,12 +1,25 @@
 import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { resolveSession } = vi.hoisted(() => ({
-  resolveSession: vi.fn(),
-}));
+const { allowedDecision, protectRefreshRoute, resolveSession } = vi.hoisted(() => {
+  const allowedDecision = {
+    isDenied: () => false,
+  };
+
+  return {
+    allowedDecision,
+    protectRefreshRoute: vi.fn().mockResolvedValue(allowedDecision),
+    resolveSession: vi.fn(),
+  };
+});
 
 vi.mock("@/lib/auth/session/resolve-session", () => ({
   resolveSession,
+}));
+
+vi.mock("@/lib/security/arcjet", () => ({
+  protectRefreshRoute,
+  rateLimitMessage: vi.fn(() => "Too many requests. Please try again later."),
 }));
 
 import { GET } from "./route";
@@ -20,6 +33,22 @@ function refreshRequest(path = "/api/auth/refresh?redirect=%2Frecommend", cookie
 describe("GET /api/auth/refresh", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    protectRefreshRoute.mockResolvedValue(allowedDecision);
+  });
+
+  it("returns 429 when rate limited", async () => {
+    protectRefreshRoute.mockResolvedValue({
+      isDenied: () => true,
+      reason: { isRateLimit: () => true },
+    });
+
+    const response = await GET(refreshRequest());
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      error: "Too many requests. Please try again later.",
+    });
+    expect(resolveSession).not.toHaveBeenCalled();
   });
 
   it("redirects back with new cookies when session is refreshed", async () => {

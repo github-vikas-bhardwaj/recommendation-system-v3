@@ -2,14 +2,29 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const { createUser, createSession, setSessionCookiesInStore, redirect } = vi.hoisted(() => ({
-  createUser: vi.fn(),
-  createSession: vi.fn(),
-  setSessionCookiesInStore: vi.fn(),
-  redirect: vi.fn((path: string) => {
-    throw new Error(`REDIRECT:${path}`);
-  }),
-}));
+const {
+  allowedDecision,
+  createUser,
+  createSession,
+  protectAuthAction,
+  redirect,
+  setSessionCookiesInStore,
+} = vi.hoisted(() => {
+  const allowedDecision = {
+    isDenied: () => false,
+  };
+
+  return {
+    allowedDecision,
+    createUser: vi.fn(),
+    createSession: vi.fn(),
+    protectAuthAction: vi.fn().mockResolvedValue(allowedDecision),
+    setSessionCookiesInStore: vi.fn(),
+    redirect: vi.fn((path: string) => {
+      throw new Error(`REDIRECT:${path}`);
+    }),
+  };
+});
 
 vi.mock("next/navigation", () => ({
   redirect,
@@ -31,6 +46,11 @@ vi.mock("@/lib/auth/signup/signup.server", () => ({
       this.name = "SignupConflictError";
     }
   },
+}));
+
+vi.mock("@/lib/security/arcjet", () => ({
+  protectAuthAction,
+  rateLimitMessage: vi.fn(() => "Too many requests. Please try again later."),
 }));
 
 import { SignupConflictError } from "@/lib/auth/signup/signup.server";
@@ -59,6 +79,7 @@ function signupFormData(overrides: Record<string, string> = {}) {
 describe("signupAction", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    protectAuthAction.mockResolvedValue(allowedDecision);
   });
 
   it("creates a session and redirects to recommend on success", async () => {
@@ -92,6 +113,19 @@ describe("signupAction", () => {
       refreshExpiresAt
     );
     expect(redirect).toHaveBeenCalledWith("/recommend");
+  });
+
+  it("returns a rate limit error when Arcjet denies the request", async () => {
+    protectAuthAction.mockResolvedValue({
+      isDenied: () => true,
+      reason: { isRateLimit: () => true },
+    });
+
+    const result = await signupAction(initialSignupActionState, signupFormData());
+
+    expect(protectAuthAction).toHaveBeenCalledOnce();
+    expect(createUser).not.toHaveBeenCalled();
+    expect(result.error).toBe("Too many requests. Please try again later.");
   });
 
   it("returns field errors when validation fails", async () => {
