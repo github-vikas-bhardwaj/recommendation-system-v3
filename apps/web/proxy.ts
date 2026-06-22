@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
       await verifyAccessToken(accessToken);
       return NextResponse.next();
     } catch {
-      // Access token expired — refresh via route handler.
+      // Access token expired or bad — refresh via route handler.
     }
   }
 

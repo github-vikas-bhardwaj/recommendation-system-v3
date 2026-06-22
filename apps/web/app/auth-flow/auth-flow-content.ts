@@ -182,7 +182,7 @@ export const authFlowSteps: AuthFlowStep[] = [
     summary: "Requires session; may refresh cookies; proxies to FastAPI with X-User-Id.",
     transport: "API Route",
     entryPoint: "apps/web/app/api/recommend/route.ts",
-    callChain: `curl/fetch POST /api/recommend
+    callChain: `POST /api/recommend
   → app/api/recommend/route.ts
     → requireAuth(req) → resolveSession()
     → setSessionCookies on response if refreshed

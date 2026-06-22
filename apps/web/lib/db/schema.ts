@@ -17,10 +17,10 @@ export const refreshTokens = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    tokenHash: text("token_hash").notNull().unique(),
+    refreshTokenHash: text("token_hash").notNull().unique(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
-  (table) => [index("refresh_tokens_user_id_token_unique").on(table.userId, table.tokenHash)]
+  (table) => [index("refresh_tokens_user_id_token_unique").on(table.userId, table.refreshTokenHash)]
 );

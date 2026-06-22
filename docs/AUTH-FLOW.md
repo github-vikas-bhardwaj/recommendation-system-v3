@@ -384,10 +384,10 @@ app/recommend/page.tsx
     → user → render welcome page
 ```
 
-### API (when called directly)
+### API call (e.g. curl or future client UI)
 
 ```
-POST /api/recommend  (curl, fetch, etc.)
+POST /api/recommend
     └─ app/api/recommend/route.ts
          ├─ requireAuth(req)          ← resolve-session.ts
          │    (may return new tokens if access was expired)
@@ -448,7 +448,7 @@ After signout:
    → recommend/page.tsx → getSessionUser() OK
    → Header shows "Sign out"
 
-4. User calls POST /api/recommend (curl or client)
+4. Call POST /api/recommend (curl or client)
    → requireAuth → proxy to FastAPI with X-User-Id
 
 5. Access JWT expires (e.g. after JWT_ACCESS_EXPIRES_IN)

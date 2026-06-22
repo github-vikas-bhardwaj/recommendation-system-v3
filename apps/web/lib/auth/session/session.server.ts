@@ -32,11 +32,11 @@ export async function createSession(
 ): Promise<IssuedSession> {
   const refreshExpiresAt = options?.refreshExpiresAt ?? getRefreshExpiresAt();
   const refreshToken = generateRefreshToken();
-  const tokenHash = hashRefreshToken(refreshToken);
+  const refreshTokenHash = hashRefreshToken(refreshToken);
 
   await db.insert(refreshTokens).values({
     userId,
-    tokenHash,
+    refreshTokenHash,
     expiresAt: refreshExpiresAt,
   });
 
@@ -46,8 +46,7 @@ export async function createSession(
 }
 
 export async function refreshSession(plainRefreshToken: string): Promise<IssuedSession> {
-  const tokenHash = hashRefreshToken(plainRefreshToken);
-
+  const refreshTokenHash = hashRefreshToken(plainRefreshToken);
   const [storedToken] = await db
     .select({
       id: refreshTokens.id,
@@ -55,7 +54,9 @@ export async function refreshSession(plainRefreshToken: string): Promise<IssuedS
       expiresAt: refreshTokens.expiresAt,
     })
     .from(refreshTokens)
-    .where(and(eq(refreshTokens.tokenHash, tokenHash), isNull(refreshTokens.revokedAt)))
+    .where(
+      and(eq(refreshTokens.refreshTokenHash, refreshTokenHash), isNull(refreshTokens.revokedAt))
+    )
     .limit(1);
 
   if (!storedToken) {
@@ -66,7 +67,7 @@ export async function refreshSession(plainRefreshToken: string): Promise<IssuedS
     throw new SessionInvalidError();
   }
 
-  // rotate: revoke old token
+  // rotate: revoke old refresh token
   await db
     .update(refreshTokens)
     .set({ revokedAt: new Date() })
@@ -77,10 +78,12 @@ export async function refreshSession(plainRefreshToken: string): Promise<IssuedS
 }
 
 export async function revokeSession(plainRefreshToken: string): Promise<void> {
-  const tokenHash = hashRefreshToken(plainRefreshToken);
+  const refreshTokenHash = hashRefreshToken(plainRefreshToken);
 
   await db
     .update(refreshTokens)
     .set({ revokedAt: new Date() })
-    .where(and(eq(refreshTokens.tokenHash, tokenHash), isNull(refreshTokens.revokedAt)));
+    .where(
+      and(eq(refreshTokens.refreshTokenHash, refreshTokenHash), isNull(refreshTokens.revokedAt))
+    );
 }

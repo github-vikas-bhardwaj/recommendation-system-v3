@@ -40,7 +40,7 @@ vi.mock("@/lib/db/schema", () => ({
   refreshTokens: {
     id: "id",
     userId: "user_id",
-    tokenHash: "token_hash",
+    refreshTokenHash: "token_hash",
     expiresAt: "expires_at",
     revokedAt: "revoked_at",
   },
