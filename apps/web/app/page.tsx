@@ -1,8 +1,17 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { getSessionUser } from "@/lib/auth/session/get-session";
 
 import styles from "./home.module.css";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getSessionUser();
+
+  if (user) {
+    redirect("/shows");
+  }
+
   return (
     <div className={styles.page}>
       <section className={styles.hero}>

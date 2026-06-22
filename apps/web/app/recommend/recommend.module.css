@@ -11,6 +11,89 @@
   padding: 3rem 1.5rem 4rem;
 }
 
+.watchedSection {
+  margin: 1.75rem 0 0;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.watchedSectionTitle {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.watchedPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.watchedPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 100%;
+  padding: 0.3rem 0.3rem 0.3rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.watchedPillLabel {
+  overflow: hidden;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.watchedPillRemove {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    transform 0.15s;
+}
+
+.watchedPillRemove:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #dc2626;
+  transform: scale(1.05);
+}
+
+.watchedPillRemove:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.watchedPillsError {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #dc2626;
+}
+
 .title {
   margin: 0;
   font-size: clamp(1.75rem, 4vw, 2.25rem);

@@ -10,7 +10,7 @@ export default async function SigninPage() {
   const user = await getSessionUser();
 
   if (user) {
-    redirect("/recommend");
+    redirect("/shows");
   }
 
   return <AuthSplitLayout promo={<SigninPromoPanel />} form={<SigninForm />} />;
