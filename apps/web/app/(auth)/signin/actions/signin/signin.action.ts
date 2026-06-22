@@ -7,6 +7,7 @@ import { setSessionCookiesInStore } from "@/lib/auth/session/cookies";
 import { createSession } from "@/lib/auth/session/session.server";
 import { signinSchema } from "@/lib/auth/signin/signin.schema";
 import { authenticateUser, SigninInvalidCredentialsError } from "@/lib/auth/signin/signin.server";
+import { protectAuthAction, rateLimitMessage } from "@/lib/security/arcjet";
 
 import type { SigninActionState } from "./signin.action.types";
 
@@ -19,6 +20,11 @@ export async function signinAction(
   _prevState: SigninActionState,
   formData: FormData
 ): Promise<SigninActionState> {
+  const decision = await protectAuthAction();
+  if (decision.isDenied()) {
+    return { error: rateLimitMessage(decision) };
+  }
+
   const result = signinSchema.safeParse({
     email: formValue(formData, "email"),
     password: formValue(formData, "password"),
