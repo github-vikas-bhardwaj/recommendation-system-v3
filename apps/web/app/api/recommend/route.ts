@@ -1,7 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(req: Request) {
+import { clearSessionCookies, setSessionCookies } from "@/lib/auth/session/cookies";
+import { requireAuth, UnauthorizedError } from "@/lib/auth/session/require-auth";
+
+export async function POST(req: NextRequest) {
   try {
+    const { user, tokens, refreshExpiresAt } = await requireAuth(req);
+
     const body = await req.json();
     const userInput = body?.input;
 
@@ -21,6 +26,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "X-User-Id": user.id,
       },
       body: JSON.stringify({ input: { input: userInput.trim() } }),
       signal: AbortSignal.timeout(180_000),
@@ -48,8 +54,18 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json(data);
+    const jsonResponse = NextResponse.json(data);
+    if (tokens) {
+      setSessionCookies(jsonResponse, tokens, refreshExpiresAt);
+    }
+    return jsonResponse;
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      const response = NextResponse.json({ error: error.message }, { status: 401 });
+      clearSessionCookies(response);
+      return response;
+    }
+
     console.error("[/api/recommend]", error);
 
     if (error instanceof SyntaxError) {

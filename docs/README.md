@@ -16,10 +16,11 @@ Read in this order if you are new to the repo.
 
 ## By topic
 
-| Topic          | Doc                                                                 |
-| -------------- | ------------------------------------------------------------------- |
-| System design  | [ARCHITECTURE.md](./ARCHITECTURE.md)                                |
-| Local setup    | [GETTING-STARTED.md](./GETTING-STARTED.md) → [setup/](./setup/)     |
-| Project status | [STATUS.md](./STATUS.md)                                            |
-| Web tooling    | [TOOLING-WEB.md](./TOOLING-WEB.md) → [tooling/](./tooling/)         |
-| API tooling    | [TOOLING-API.md](./TOOLING-API.md) → [tooling-api/](./tooling-api/) |
+| Topic            | Doc                                                                 |
+| ---------------- | ------------------------------------------------------------------- |
+| System design    | [ARCHITECTURE.md](./ARCHITECTURE.md)                                |
+| Auth (technical) | [AUTH-FLOW.md](./AUTH-FLOW.md) · UI: `/auth-flow`                   |
+| Local setup      | [GETTING-STARTED.md](./GETTING-STARTED.md) → [setup/](./setup/)     |
+| Project status   | [STATUS.md](./STATUS.md)                                            |
+| Web tooling      | [TOOLING-WEB.md](./TOOLING-WEB.md) → [tooling/](./tooling/)         |
+| API tooling      | [TOOLING-API.md](./TOOLING-API.md) → [tooling-api/](./tooling-api/) |
