@@ -7,8 +7,14 @@ import {
   setSessionCookies,
 } from "@/lib/auth/session/cookies";
 import { resolveSession } from "@/lib/auth/session/resolve-session";
+import { protectRefreshRoute, rateLimitMessage } from "@/lib/security/arcjet";
 
 export async function GET(req: NextRequest) {
+  const decision = await protectRefreshRoute(req);
+  if (decision.isDenied()) {
+    return NextResponse.json({ error: rateLimitMessage(decision) }, { status: 429 });
+  }
+
   const redirectTo = req.nextUrl.searchParams.get("redirect") ?? "/";
   const accessToken = req.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
   const refreshToken = req.cookies.get(REFRESH_TOKEN_COOKIE)?.value;

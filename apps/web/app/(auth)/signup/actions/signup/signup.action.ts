@@ -7,6 +7,7 @@ import { setSessionCookiesInStore } from "@/lib/auth/session/cookies";
 import { createSession } from "@/lib/auth/session/session.server";
 import { signupSchema } from "@/lib/auth/signup/signup.schema";
 import { createUser, SignupConflictError } from "@/lib/auth/signup/signup.server";
+import { protectAuthAction, rateLimitMessage } from "@/lib/security/arcjet";
 
 import type { SignupActionState } from "./signup.action.types";
 
@@ -19,6 +20,11 @@ export async function signupAction(
   _prevState: SignupActionState,
   formData: FormData
 ): Promise<SignupActionState> {
+  const decision = await protectAuthAction();
+  if (decision.isDenied()) {
+    return { error: rateLimitMessage(decision) };
+  }
+
   const lastName = formValue(formData, "lastName");
 
   const result = signupSchema.safeParse({
