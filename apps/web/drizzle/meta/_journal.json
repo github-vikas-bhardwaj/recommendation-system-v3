@@ -36,6 +36,13 @@
       "when": 1782127532188,
       "tag": "0004_burly_quasimodo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782197129853,
+      "tag": "0005_heavy_lifeguard",
+      "breakpoints": true
     }
   ]
 }

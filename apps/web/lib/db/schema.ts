@@ -1,4 +1,13 @@
-import { index, integer, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  customType,
+  index,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -52,3 +61,18 @@ export const showsWatched = pgTable(
   },
   (table) => [primaryKey({ columns: [table.userId, table.showId] })]
 );
+
+const vector768 = customType<{ data: string; driverData: string }>({
+  dataType() {
+    return "vector(768)";
+  },
+});
+
+export const showsEmbeddings = pgTable("shows_embeddings", {
+  showId: integer("show_id")
+    .primaryKey()
+    .references(() => shows.id, { onDelete: "cascade" }),
+  embedding: vector768("embedding").notNull(),
+  model: text("model").notNull().default("nomic-embed-text"),
+  embeddedAt: timestamp("embedded_at", { withTimezone: true }).notNull().defaultNow(),
+});
