@@ -46,3 +46,15 @@ export function toShowListItem(row: ShowRow) {
     summary: stripHtml(row.summary),
   };
 }
+
+export function toShowSearchResult(
+  row: Pick<ShowRow, "id" | "name" | "type" | "status" | "image">
+) {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type,
+    status: row.status,
+    imageUrl: row.image,
+  };
+}

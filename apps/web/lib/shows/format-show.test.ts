@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { formatYear, parseGenres, stripHtml, toShowListItem } from "./format-show";
+import {
+  formatYear,
+  parseGenres,
+  stripHtml,
+  toShowListItem,
+  toShowSearchResult,
+} from "./format-show";
 
 const SAMPLE_ROW = {
   id: 5,
@@ -60,6 +66,26 @@ describe("toShowListItem", () => {
       weight: 98,
       imageUrl: null,
       summary: "Dark anthology crime drama.",
+    });
+  });
+});
+
+describe("toShowSearchResult", () => {
+  it("maps a database row into a lightweight search result", () => {
+    expect(
+      toShowSearchResult({
+        id: 5,
+        name: "True Detective",
+        type: "Scripted",
+        status: "Running",
+        image: null,
+      })
+    ).toEqual({
+      id: 5,
+      name: "True Detective",
+      type: "Scripted",
+      status: "Running",
+      imageUrl: null,
     });
   });
 });

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { getSessionUser } from "@/lib/auth/session/get-session";
 import { listShows } from "@/lib/shows/list-shows";
@@ -6,7 +7,7 @@ import { getWatchedShowIds } from "@/lib/shows/watched-shows.server";
 
 import { ShowCard } from "./_components/ShowCard";
 import { ShowsPagination } from "./_components/ShowsPagination";
-import { ShowsSearch } from "./_components/ShowsSearch";
+import { ShowsTypeahead } from "./_components/ShowsTypeahead";
 import styles from "./shows.module.css";
 
 export const metadata: Metadata = {
@@ -17,23 +18,24 @@ export const metadata: Metadata = {
 type ShowsPageProps = {
   searchParams: Promise<{
     page?: string;
-    q?: string;
   }>;
 };
 
 export default async function ShowsPage({ searchParams }: ShowsPageProps) {
+  const user = await getSessionUser();
+
+  if (!user) {
+    redirect("/signin");
+  }
+
   const params = await searchParams;
   const page = Number(params.page ?? "1");
-  const query = params.q ?? "";
 
-  const result = await listShows({ page, query });
-  const user = await getSessionUser();
-  const watchedShowIds = user
-    ? await getWatchedShowIds(
-        user.id,
-        result.shows.map((show) => show.id)
-      )
-    : new Set<number>();
+  const result = await listShows({ page });
+  const watchedShowIds = await getWatchedShowIds(
+    user.id,
+    result.shows.map((show) => show.id)
+  );
 
   const rangeStart = result.total === 0 ? 0 : (result.page - 1) * result.pageSize + 1;
   const rangeEnd = Math.min(result.page * result.pageSize, result.total);
@@ -54,47 +56,31 @@ export default async function ShowsPage({ searchParams }: ShowsPageProps) {
           </p>
         </header>
 
-        <ShowsSearch query={result.query} total={result.total} />
+        <ShowsTypeahead total={result.total} />
 
         {result.shows.length > 0 ? (
           <>
             <p className={styles.resultsLine}>
               Showing {rangeStart.toLocaleString()}–{rangeEnd.toLocaleString()} of{" "}
               {result.total.toLocaleString()}
-              {result.query ? ` matching “${result.query}”` : ""}
             </p>
 
             <ul className={styles.grid}>
               {result.shows.map((show) => (
                 <li key={show.id}>
-                  <ShowCard
-                    show={show}
-                    isWatched={watchedShowIds.has(show.id)}
-                    canToggleWatched={Boolean(user)}
-                  />
+                  <ShowCard show={show} isWatched={watchedShowIds.has(show.id)} canToggleWatched />
                 </li>
               ))}
             </ul>
 
-            <ShowsPagination
-              page={result.page}
-              totalPages={result.totalPages}
-              query={result.query}
-            />
+            <ShowsPagination page={result.page} totalPages={result.totalPages} />
           </>
         ) : (
           <div className={styles.emptyState}>
             <p className={styles.emptyTitle}>No shows found</p>
             <p className={styles.emptyText}>
-              {result.query
-                ? `We couldn’t find anything matching “${result.query}”. Try a different title.`
-                : "The catalog is empty. Run the import script to load shows."}
+              The catalog is empty. Run the import script to load shows.
             </p>
-            {result.query ? (
-              <a href="/shows" className={styles.emptyLink}>
-                View all shows
-              </a>
-            ) : null}
           </div>
         )}
       </div>

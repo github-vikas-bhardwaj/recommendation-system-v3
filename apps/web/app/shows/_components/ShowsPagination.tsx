@@ -5,26 +5,17 @@ import styles from "../shows.module.css";
 type ShowsPaginationProps = {
   page: number;
   totalPages: number;
-  query: string;
 };
 
-function buildShowsHref(page: number, query: string): string {
-  const params = new URLSearchParams();
-
-  if (query) {
-    params.set("q", query);
+function buildShowsHref(page: number): string {
+  if (page <= 1) {
+    return "/shows";
   }
 
-  if (page > 1) {
-    params.set("page", String(page));
-  }
-
-  const search = params.toString();
-
-  return search ? `/shows?${search}` : "/shows";
+  return `/shows?page=${page}`;
 }
 
-export function ShowsPagination({ page, totalPages, query }: ShowsPaginationProps) {
+export function ShowsPagination({ page, totalPages }: ShowsPaginationProps) {
   if (totalPages <= 1) {
     return null;
   }
@@ -42,7 +33,7 @@ export function ShowsPagination({ page, totalPages, query }: ShowsPaginationProp
   return (
     <nav className={styles.pagination} aria-label="Shows pagination">
       {page > 1 ? (
-        <Link href={buildShowsHref(previousPage, query)} className={styles.paginationButton}>
+        <Link href={buildShowsHref(previousPage)} className={styles.paginationButton}>
           Previous
         </Link>
       ) : (
@@ -58,7 +49,7 @@ export function ShowsPagination({ page, totalPages, query }: ShowsPaginationProp
           ) : (
             <Link
               key={pageNumber}
-              href={buildShowsHref(pageNumber, query)}
+              href={buildShowsHref(pageNumber)}
               className={styles.paginationPage}
             >
               {pageNumber}
@@ -68,7 +59,7 @@ export function ShowsPagination({ page, totalPages, query }: ShowsPaginationProp
       </div>
 
       {page < totalPages ? (
-        <Link href={buildShowsHref(nextPage, query)} className={styles.paginationButton}>
+        <Link href={buildShowsHref(nextPage)} className={styles.paginationButton}>
           Next
         </Link>
       ) : (

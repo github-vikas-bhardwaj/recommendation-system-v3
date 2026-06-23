@@ -17,6 +17,18 @@ export type WatchedShowItem = {
   name: string;
 };
 
+export type ShowSearchResult = {
+  id: number;
+  name: string;
+  type: string;
+  status: string;
+  imageUrl: string | null;
+};
+
+export type ShowSearchResultWithWatched = ShowSearchResult & {
+  isWatched: boolean;
+};
+
 export type ListShowsResult = {
   shows: ShowListItem[];
   total: number;
