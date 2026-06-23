@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, primaryKey, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -23,4 +23,32 @@ export const refreshTokens = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
   },
   (table) => [index("refresh_tokens_user_id_token_unique").on(table.userId, table.refreshTokenHash)]
+);
+
+export const shows = pgTable("shows", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  language: text("language").notNull(),
+  genres: text("genres").notNull(),
+  status: text("status").notNull(),
+  premiered: timestamp("premiered", { withTimezone: true }),
+  ended: timestamp("ended", { withTimezone: true }),
+  weight: integer("weight").notNull(),
+  image: text("image"),
+  summary: text("summary").notNull(),
+});
+
+export const showsWatched = pgTable(
+  "shows_watched",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    showId: integer("show_id")
+      .notNull()
+      .references(() => shows.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.showId] })]
 );

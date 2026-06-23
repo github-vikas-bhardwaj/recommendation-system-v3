@@ -26,6 +26,35 @@ function getRefreshExpiresAt(): Date {
   return expiresAt;
 }
 
+async function findValidRefreshToken(plainRefreshToken: string) {
+  const refreshTokenHash = hashRefreshToken(plainRefreshToken);
+  const [storedToken] = await db
+    .select({
+      id: refreshTokens.id,
+      userId: refreshTokens.userId,
+      expiresAt: refreshTokens.expiresAt,
+    })
+    .from(refreshTokens)
+    .where(
+      and(eq(refreshTokens.refreshTokenHash, refreshTokenHash), isNull(refreshTokens.revokedAt))
+    )
+    .limit(1);
+
+  if (!storedToken || storedToken.expiresAt < new Date()) {
+    return null;
+  }
+
+  return storedToken;
+}
+
+export async function getUserIdFromValidRefreshToken(
+  plainRefreshToken: string
+): Promise<string | null> {
+  const storedToken = await findValidRefreshToken(plainRefreshToken);
+
+  return storedToken?.userId ?? null;
+}
+
 export async function createSession(
   userId: string,
   options?: { refreshExpiresAt?: Date }
@@ -46,24 +75,9 @@ export async function createSession(
 }
 
 export async function refreshSession(plainRefreshToken: string): Promise<IssuedSession> {
-  const refreshTokenHash = hashRefreshToken(plainRefreshToken);
-  const [storedToken] = await db
-    .select({
-      id: refreshTokens.id,
-      userId: refreshTokens.userId,
-      expiresAt: refreshTokens.expiresAt,
-    })
-    .from(refreshTokens)
-    .where(
-      and(eq(refreshTokens.refreshTokenHash, refreshTokenHash), isNull(refreshTokens.revokedAt))
-    )
-    .limit(1);
+  const storedToken = await findValidRefreshToken(plainRefreshToken);
 
   if (!storedToken) {
-    throw new SessionInvalidError();
-  }
-
-  if (storedToken.expiresAt < new Date()) {
     throw new SessionInvalidError();
   }
 

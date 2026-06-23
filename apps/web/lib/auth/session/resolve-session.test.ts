@@ -10,13 +10,22 @@ const storedUser = {
   email: "vikas@example.com",
 };
 
-const { limit, where, from, select, verifyAccessToken, refreshSession } = vi.hoisted(() => ({
+const {
+  limit,
+  where,
+  from,
+  select,
+  verifyAccessToken,
+  refreshSession,
+  getUserIdFromValidRefreshToken,
+} = vi.hoisted(() => ({
   limit: vi.fn(),
   where: vi.fn(),
   from: vi.fn(),
   select: vi.fn(),
   verifyAccessToken: vi.fn(),
   refreshSession: vi.fn(),
+  getUserIdFromValidRefreshToken: vi.fn(),
 }));
 
 limit.mockResolvedValue([storedUser]);
@@ -31,6 +40,7 @@ vi.mock("@/lib/db/schema", () => ({
 vi.mock("./verify-access-token", () => ({ verifyAccessToken }));
 vi.mock("./session.server", () => ({
   refreshSession,
+  getUserIdFromValidRefreshToken,
   SessionInvalidError: class SessionInvalidError extends Error {
     constructor(message = "Invalid session") {
       super(message);
@@ -39,7 +49,7 @@ vi.mock("./session.server", () => ({
   },
 }));
 
-import { resolveSession } from "./resolve-session";
+import { getSessionUserReadOnly, resolveSession } from "./resolve-session";
 import { SessionInvalidError } from "./session.server";
 
 describe("resolveSession", () => {
@@ -94,5 +104,40 @@ describe("resolveSession", () => {
     const result = await resolveSession("expired-access", "invalid-refresh");
 
     expect(result).toEqual({ status: "unauthenticated", cleared: true });
+  });
+});
+
+describe("getSessionUserReadOnly", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    limit.mockResolvedValue([storedUser]);
+    verifyAccessToken.mockResolvedValue({ sub: USER_ID });
+  });
+
+  it("returns user from a valid access token", async () => {
+    const user = await getSessionUserReadOnly("valid-access", "refresh-token");
+
+    expect(user).toEqual(storedUser);
+    expect(getUserIdFromValidRefreshToken).not.toHaveBeenCalled();
+  });
+
+  it("falls back to refresh token without rotating session", async () => {
+    verifyAccessToken.mockRejectedValue(new Error("expired"));
+    getUserIdFromValidRefreshToken.mockResolvedValue(USER_ID);
+
+    const user = await getSessionUserReadOnly("expired-access", "valid-refresh");
+
+    expect(user).toEqual(storedUser);
+    expect(getUserIdFromValidRefreshToken).toHaveBeenCalledWith("valid-refresh");
+    expect(refreshSession).not.toHaveBeenCalled();
+  });
+
+  it("returns null when both tokens are missing or invalid", async () => {
+    verifyAccessToken.mockRejectedValue(new Error("expired"));
+    getUserIdFromValidRefreshToken.mockResolvedValue(null);
+
+    const user = await getSessionUserReadOnly("expired-access", "invalid-refresh");
+
+    expect(user).toBeNull();
   });
 });
