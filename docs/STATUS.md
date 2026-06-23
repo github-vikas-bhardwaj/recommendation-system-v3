@@ -30,7 +30,6 @@ CI must run at least once on a PR before the check appears in the ruleset picker
 ## Planned
 
 - RAG / vector store (`apps/api`)
-- Auth (JWT/session on BFF)
 - Final product UI
 - Docker, deployment
 

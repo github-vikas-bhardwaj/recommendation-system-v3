@@ -18,6 +18,7 @@
     "db:setup": "tsx --env-file=.env.local scripts/setup-db.ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts",
+    "db:import-shows": "tsx --env-file=.env.local scripts/import-shows-data.ts",
     "db:studio": "drizzle-kit studio --config drizzle.config.ts"
   },
   "dependencies": {

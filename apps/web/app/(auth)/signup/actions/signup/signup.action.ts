@@ -53,5 +53,5 @@ export async function signupAction(
     return { error: "Something went wrong. Please try again." };
   }
 
-  redirect("/recommend");
+  redirect("/shows");
 }

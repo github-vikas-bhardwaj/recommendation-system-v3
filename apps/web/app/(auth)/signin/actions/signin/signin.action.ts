@@ -48,5 +48,5 @@ export async function signinAction(
     return { error: "Something went wrong. Please try again." };
   }
 
-  redirect("/recommend");
+  redirect("/shows");
 }

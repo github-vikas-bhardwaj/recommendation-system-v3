@@ -5,7 +5,11 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 
-import { refreshSession, SessionInvalidError } from "./session.server";
+import {
+  getUserIdFromValidRefreshToken,
+  refreshSession,
+  SessionInvalidError,
+} from "./session.server";
 import type { SessionTokens, SessionUser } from "./session.types";
 import { verifyAccessToken } from "./verify-access-token";
 
@@ -91,4 +95,27 @@ export async function resolveSession(
 
     throw error;
   }
+}
+
+export async function getSessionUserReadOnly(
+  accessToken: string | undefined,
+  refreshToken: string | undefined
+): Promise<SessionUser | null> {
+  const userFromAccess = await resolveUserFromAccessToken(accessToken);
+
+  if (userFromAccess) {
+    return userFromAccess;
+  }
+
+  if (!refreshToken) {
+    return null;
+  }
+
+  const userId = await getUserIdFromValidRefreshToken(refreshToken);
+
+  if (!userId) {
+    return null;
+  }
+
+  return loadUserById(userId);
 }

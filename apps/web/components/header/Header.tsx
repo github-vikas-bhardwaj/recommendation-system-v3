@@ -30,18 +30,26 @@ export async function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link href={user ? "/recommend" : "/"} className={styles.brand}>
+        <Link href={user ? "/shows" : "/"} className={styles.brand}>
           <span className={styles.brandIcon}>R</span>
           Recommend
         </Link>
 
         <nav className={styles.nav} aria-label="Account">
           {user ? (
-            <form action={signoutAction}>
-              <button type="submit" className={styles.navButtonGhost}>
-                Sign out
-              </button>
-            </form>
+            <>
+              <Link href="/shows" className={styles.navLink}>
+                Shows
+              </Link>
+              <Link href="/recommend" className={styles.navLink}>
+                Recommend
+              </Link>
+              <form action={signoutAction}>
+                <button type="submit" className={styles.navButtonGhost}>
+                  Sign out
+                </button>
+              </form>
+            </>
           ) : (
             guestNavItems.map((item) => (
               <a key={item.label} href={item.href} className={variantClass[item.variant]}>

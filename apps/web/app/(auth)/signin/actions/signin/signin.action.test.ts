@@ -79,7 +79,7 @@ describe("signinAction", () => {
     protectAuthAction.mockResolvedValue(allowedDecision);
   });
 
-  it("creates a session and redirects to recommend on success", async () => {
+  it("creates a session and redirects to shows on success", async () => {
     authenticateUser.mockResolvedValue({
       user: {
         id: "851b2dd4-17ad-4d83-8df4-59c4abb3feb8",
@@ -96,7 +96,7 @@ describe("signinAction", () => {
     });
 
     await expect(signinAction(initialSigninActionState, signinFormData())).rejects.toThrow(
-      "REDIRECT:/recommend"
+      "REDIRECT:/shows"
     );
 
     expect(authenticateUser).toHaveBeenCalledOnce();
@@ -109,7 +109,7 @@ describe("signinAction", () => {
       },
       refreshExpiresAt
     );
-    expect(redirect).toHaveBeenCalledWith("/recommend");
+    expect(redirect).toHaveBeenCalledWith("/shows");
   });
 
   it("returns a rate limit error when Arcjet denies the request", async () => {
